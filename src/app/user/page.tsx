@@ -147,15 +147,25 @@ export default function Catalogo() {
       <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-8">
 
         {/* SIDEBAR */}
-        <aside className="w-full lg:w-[280px] bg-zinc-950 border border-white/10 rounded-3xl p-6 h-fit sticky top-28">
+        <aside className="w-full lg:w-[320px] rounded-[32px] border border-white/10 bg-zinc-950/95 p-6 shadow-[0_24px_80px_-42px_rgba(0,0,0,0.8)] backdrop-blur-sm h-fit sticky top-24">
 
-          <h2 className="text-xl font-bold mb-8">
-            Filtros
-          </h2>
+          <div className="mb-8 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.35em] text-white/40">
+                Filtros
+              </p>
+              <h2 className="mt-3 text-2xl font-bold text-white">
+                Refina tu búsqueda
+              </h2>
+            </div>
+            <div className="rounded-full bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.25em] text-white/70">
+              {filtered.length}
+            </div>
+          </div>
 
           {/* BUSCADOR */}
-          <div className="mb-8">
-            <p className="text-sm uppercase tracking-widest text-white/40 mb-3">
+          <div className="mb-8 space-y-3">
+            <p className="text-sm uppercase tracking-[0.35em] text-white/40">
               Buscar
             </p>
 
@@ -164,24 +174,13 @@ export default function Catalogo() {
               placeholder="Buscar producto..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="
-                w-full
-                bg-black
-                border
-                border-white/10
-                rounded-xl
-                px-4
-                py-3
-                outline-none
-                focus:border-purple-500
-                transition
-              "
+              className="w-full rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-zinc-500 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
             />
           </div>
 
           {/* CATEGORÍAS */}
-          <div className="mb-8">
-            <p className="text-sm uppercase tracking-widest text-white/40 mb-4">
+          <div className="mb-8 space-y-3">
+            <p className="text-sm uppercase tracking-[0.35em] text-white/40">
               Categorías
             </p>
 
@@ -192,18 +191,7 @@ export default function Catalogo() {
                   e.target.value === "" ? null : Number(e.target.value)
                 )
               }
-              className="
-                w-full
-                px-4
-                py-3
-                rounded-xl
-                bg-black
-                border
-                border-white/10
-                text-white
-                focus:outline-none
-                focus:border-purple-500
-              "
+              className="w-full rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
             >
               <option value="">Todos</option>
 
@@ -219,26 +207,28 @@ export default function Catalogo() {
           </div>
 
           {/* PRECIO */}
-          <div className="mb-4">
-            <p className="text-sm uppercase tracking-widest text-white/40 mb-4">
+          <div className="mb-4 space-y-4">
+            <p className="text-sm uppercase tracking-[0.35em] text-white/40">
               Precio máximo
             </p>
 
-            <input
-              type="range"
-              min="10000"
-              max="1000000"
-              step="10000"
-              value={precioMax}
-              onChange={(e) =>
-                setPrecioMax(Number(e.target.value))
-              }
-              className="w-full accent-purple-500"
-            />
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <input
+                type="range"
+                min="10000"
+                max="1000000"
+                step="10000"
+                value={precioMax}
+                onChange={(e) =>
+                  setPrecioMax(Number(e.target.value))
+                }
+                className="w-full accent-purple-500"
+              />
 
-            <p className="mt-3 text-white/70">
-              ${new Intl.NumberFormat("es-CO").format(precioMax)}
-            </p>
+              <p className="mt-3 text-sm text-white/70">
+                {formatCOP(precioMax)}
+              </p>
+            </div>
           </div>
         </aside>
 
