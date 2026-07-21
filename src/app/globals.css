@@ -1,0 +1,435 @@
+/**
+ * globals.css
+ * ──────────────────────────────────────────────────────────────
+ * Estilos globales de la aplicación ARQUETIPO.
+ * Este archivo se importa en layout.tsx y aplica a todas las páginas.
+ *
+ * Secciones:
+ * 1. Importaciones (Tailwind CSS + íconos Remix)
+ * 2. Tokens de tema (@theme inline)
+ * 3. Fondo del body (degradado radial dark mode)
+ * 4. Clases de utilidad global (.catalogo-publico, .urban, .animate-scroll)
+ * 5. Pantalla de carga (loader-*)
+ * 6. Responsive del hero
+ * 7. Grilla de productos y tarjetas (.product-grid, .product-card-img, .section-divider)
+ */
+
+/* ── 1. Importaciones ──────────────────────────────────────── */
+  @import "tailwindcss";
+  @import "remixicon/fonts/remixicon.css";
+
+
+/* ── 2. Tokens de tema ─────────────────────────────────────── */
+  @theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+  }
+
+/* ── 3. Fondo del body ─────────────────────────────────────── */
+/*
+  Se usa un degradado radial que va del negro absoluto en el centro
+  hacia un violeta (rgb(107, 42, 212)), luego gris claro y de vuelta
+  al negro. Esto crea el efecto de "halo" característico de la marca.
+*/
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: radial-gradient(circle  , rgba(0, 0, 0, 1) 40%, 
+        rgb(107, 42, 212) 60%, 
+        rgb(226, 226, 226) 65%, 
+        rgb(126, 126, 126) 70%, 
+        rgba(0, 0, 0, 1) 80%);
+      --foreground: #ffffff;
+    }
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: Arial, Helvetica, sans-serif;
+    background-size: 100% 250%;    /* el degradado es más alto que la pantalla para no cortarse */
+    background-attachment: fixed;  /* el fondo no se mueve al hacer scroll */
+    background-repeat: no-repeat;
+    min-height: 100vh;
+    margin:0;
+    overflow-x: hidden; /* evita scroll horizontal por animaciones */
+  }
+
+
+/* ── 4. Clases de utilidad global ──────────────────────────── */
+
+  /* Contenedor del catálogo público (páginas de productos) */
+  .catalogo-publico {
+    margin-inline:0.5rem;
+    margin-top: 15px ;
+    margin: 2.3rem;
+  }
+ 
+  /*
+    .urban — Tipografía de gran impacto usada para el nombre ARQUETIPO en el hero.
+    Usa la fuente Anton (importada en layout.tsx desde Google Fonts).
+    El tamaño es responsivo con clamp(): mínimo 4rem, ideal 18vw, máximo 18rem.
+  */
+  .urban {
+    font-family: 'Anton', cursive !important;
+    font-size: clamp(4rem, 18vw, 18rem);
+    line-height: 0.9;
+    letter-spacing: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 210px;
+    margin-bottom: 210px;
+  }
+
+
+/* ── Animación de scroll horizontal (banner/ticker) ───────── */
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); } /* se mueve el 50% porque el contenido está duplicado */
+}
+
+/* Aplica la animación de desplazamiento continuo */
+.animate-scroll {
+  animation: scroll 10s linear infinite;
+}
+
+
+/* ============================================================
+   5. PANTALLA DE CARGA (PAGE LOADER)
+   ──────────────────────────────────────────────────────────
+   Todas las clases con prefijo "loader-" pertenecen al componente
+   PageLoader.tsx. La estructura es:
+
+   .loader-overlay         → capa fija que cubre toda la pantalla
+   ├── .loader-columns     → contenedor flex de las columnas de imágenes
+   │   └── .loader-column  → columna individual (sube desde abajo)
+   │       └── .loader-tile → celda de imagen individual
+   ├── .loader-overlay-dark → capa semitransparente encima de las imágenes
+   ├── .loader-content     → centrado del texto (marca + contador)
+   │   ├── .loader-brand   → nombre ARQUETIPO
+   │   └── .loader-counter → contador de porcentaje
+   └── .loader-bar         → barra de progreso en la parte inferior
+       └── .loader-bar-fill → relleno que crece con el progreso
+   ============================================================ */
+
+/* Contenedor principal del loader: fijo, cubre toda la pantalla */
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+  Estado de salida del overlay completo.
+  Se aplica cuando el loader está a punto de desmontarse.
+  El fade-out empieza 0.45 s después de que las columnas comienzan a subir.
+*/
+.loader-overlay.loader-exit {
+  pointer-events: none; /* deshabilita interacción durante la salida */
+  animation: loaderFadeOut 0.9s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+  animation-delay: 0.45s;
+}
+
+@keyframes loaderFadeOut {
+  to { opacity: 0; }
+}
+
+/* ── Columnas de imágenes ─────────────────────────────────── */
+
+/* Contenedor flex que ocupa toda la pantalla */
+.loader-columns {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 2px; /* pequeño espacio entre columnas */
+}
+
+/*
+  Cada columna empieza fuera de la pantalla por abajo (translateY(100%))
+  y sube a su posición (translateY(0)) con la animación colEnter.
+  El animation-delay está definido inline en el componente (escalonado).
+*/
+.loader-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: colEnter 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform: translateY(100%); /* posición inicial: fuera por abajo */
+}
+
+/*
+  Estado de salida de cada columna: sube hacia arriba y sale de la pantalla.
+  El !important sobrescribe la animación de entrada (colEnter) si aún estuviera activa.
+*/
+.loader-column.loader-column-exit {
+  animation: colExit 0.65s cubic-bezier(0.76, 0, 0.24, 1) forwards !important;
+}
+
+/* Animación de entrada: la columna sube desde abajo hasta su posición */
+@keyframes colEnter {
+  to { transform: translateY(0); }
+}
+
+/* Animación de salida: la columna sube y sale por arriba de la pantalla */
+@keyframes colExit {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-105%); } /* -105% para que quede completamente fuera */
+}
+
+/* Celda individual de imagen dentro de una columna */
+.loader-tile {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.loader-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;   /* la imagen cubre el espacio sin distorsionarse */
+  display: block;
+  pointer-events: none;
+  user-select: none;   /* evita que el usuario seleccione las imágenes */
+}
+
+/* ── Capa oscura sobre las imágenes ────────────────────────── */
+/*
+  Degradado radial: más transparente en el centro (donde está el texto)
+  y más oscuro en los bordes. Asegura la legibilidad del nombre ARQUETIPO.
+*/
+.loader-overlay-dark {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0,0,0,0.55) 0%,
+    rgba(0,0,0,0.82) 60%,
+    rgba(0,0,0,0.97) 100%
+  );
+  pointer-events: none; /* solo decorativo, no bloquea interacción */
+}
+
+/* ── Contenido central (marca + contador) ───────────────────── */
+
+/* Wrapper del texto, centrado verticalmente sobre la capa oscura */
+.loader-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/*
+  Nombre de la marca (ARQUETIPO).
+  Empieza invisible y desplazado hacia abajo, luego sube con fade-in.
+  La animación comienza 0.3 s después de que empieza la carga.
+*/
+.loader-brand {
+  font-family: 'Anton', cursive;
+  font-size: clamp(3rem, 12vw, 9rem); /* responsivo: mínimo 3rem, ideal 12vw, máximo 9rem */
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: brandIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+
+/* Estado de salida del nombre: sube y se desvanece */
+.loader-brand.loader-brand-exit {
+  animation: brandOut 0.5s ease forwards !important;
+}
+
+/* El texto aparece subiendo desde abajo con fade-in */
+@keyframes brandIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* El texto sube y desaparece */
+@keyframes brandOut {
+  to { opacity: 0; transform: translateY(-12px); }
+}
+
+/* ── Contador de porcentaje ─────────────────────────────────── */
+/*
+  Muestra el porcentaje actual (ej: " 73%").
+  Misma animación que el nombre pero con 0.45 s de retraso.
+*/
+.loader-counter {
+  font-family: 'Anton', cursive;
+  font-size: clamp(0.9rem, 2.5vw, 1.5rem);
+  color: rgba(255,255,255,0.55); /* blanco semitransparente para no competir con el logo */
+  letter-spacing: 0.25em;
+  opacity: 0;
+  animation: brandIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.45s forwards;
+}
+
+/* Estado de salida del contador */
+.loader-counter.loader-counter-exit {
+  animation: brandOut 0.4s ease forwards !important;
+}
+
+/* Garantiza que los números tengan el mismo ancho (evita saltos al cambiar de 9 a 10) */
+.loader-pct {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Barra de progreso inferior ──────────────────────────────── */
+
+/* Contenedor de la barra, fijo al borde inferior de la pantalla */
+.loader-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255,255,255,0.1); /* pista (track) gris muy suave */
+  z-index: 3;
+}
+
+/*
+  Relleno de la barra: su ancho se controla con el style={{ width: `${progress}%` }}
+  en el componente. Tiene un color degradado de violeta a rosa morado y
+  un resplandor (box-shadow) para el efecto de luz.
+*/
+.loader-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #a855f7, #c084fc);
+  transition: width 0.1s linear; /* transición suave al crecer */
+  box-shadow: 0 0 12px 2px rgba(168, 85, 247, 0.8); /* resplandor morado */
+}
+
+
+/* En móvil (<640px): reduce los márgenes del título ARQUETIPO */
+@media (max-width: 640px) {
+  .urban {
+    margin-top: 80px;
+    margin-bottom: 80px;
+  }
+}
+
+/* En tablet (<768px): márgenes intermedios + menos espacio entre columnas del loader */
+@media (max-width: 768px) {
+  .urban {
+    margin-top: 120px;
+    margin-bottom: 120px;
+  }
+  
+  .loader-columns {
+    gap: 1px; /* espacio reducido en pantallas pequeñas */
+  }
+}
+
+
+/* ============================================================
+   7. GRILLA DE PRODUCTOS Y TARJETAS
+   ──────────────────────────────────────────────────────────
+   .productos-section  → sección que contiene las dos filas de productos
+   .product-grid       → grilla CSS de 4 columnas (responsiva)
+   .product-card-img   → contenedor de imagen de cada tarjeta (alto fijo, responsivo)
+   .section-divider    → línea decorativa entre las dos filas
+   ============================================================ */
+
+/* Espacio superior de la sección de productos */
+.productos-section {
+  padding-top: 2rem;
+}
+
+/* ── Grilla de productos ──────────────────────────────────── */
+
+/*
+  auto-fit + justify-content: center garantiza que si hay menos de 4 productos
+  (ej: 3), las tarjetas se centran en lugar de quedar alineadas a la izquierda
+  con una columna vacía a la derecha.
+  Cada tarjeta tiene un ancho mínimo de 240px y máximo de 340px.
+  En desktop con 4 tarjetas: 4 × 340px = 1360px (centrado dentro del max-w-[1600px]).
+  En desktop con 3 tarjetas: 3 × 340px = 1020px (centrado automáticamente).
+*/
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 340px));
+  gap: 1.5rem;
+  justify-content: center; /* centra el grupo de tarjetas cuando no llenan el ancho total */
+}
+
+/* Tablet (hasta 1024px): tarjetas más angostas para que quepan 2 por fila */
+@media (max-width: 1024px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    justify-content: center;
+  }
+}
+
+/* Móvil (hasta 600px): columna única a ancho completo */
+@media (max-width: 600px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    justify-content: stretch;
+  }
+}
+
+/* ── Contenedor de imagen de tarjeta ──────────────────────── */
+
+/*
+  Posición relativa necesaria para que las imágenes absolutas
+  (base y hover) se posicionen dentro de esta caja.
+*/
+.product-card-img {
+  position: relative;
+  height: 520px;    /* altura en desktop */
+  overflow: hidden;
+  background: #18181b; /* color de fondo mientras carga la imagen */
+}
+
+/* Tablet: altura reducida */
+@media (max-width: 1024px) {
+  .product-card-img {
+    height: 420px;
+  }
+}
+
+/* Móvil: altura mínima para no cortar demasiado la imagen */
+@media (max-width: 600px) {
+  .product-card-img {
+    height: 360px;
+  }
+}
+
+/* ── Línea divisoria entre filas ──────────────────────────── */
+/*
+  Línea de 2px con degradado de izquierda a derecha:
+  transparente → morado suave → transparente.
+  Crea un efecto de separación elegante sin ser demasiado grueso.
+*/
+.section-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(168,85,247,0.3), transparent);
+  margin: 2.5rem 0;
+  border-radius: 999px;
+}
+
+/* ── Loader en móvil: máximo 3 columnas ─────────────────────
+  En pantallas muy pequeñas (<480px) se ocultan las columnas 4, 5 y 6
+  del loader para no saturar la pantalla con demasiadas imágenes.
+*/
+@media (max-width: 480px) {
+  .loader-column:nth-child(n+4) {
+    display: none;
+  }
+  .loader-column {
+    flex: 1 0 33.33%; /* cada columna ocupa un tercio del ancho */
+  }
+}
