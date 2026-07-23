@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import Modal from "@/components/Modal"
+import { normalizeIntValue } from "@/lib/number-fields"
 
 export default function Register() {
   const [nombre, setNombre] = useState("")
@@ -83,6 +84,9 @@ export default function Register() {
 
     setLoading(true)
 
+    const parsedTelefono = normalizeIntValue(telefono)
+    const parsedDocumentoNumero = normalizeIntValue(documentoNumero)
+
     try {
       // =========================
       // CREAR USUARIO AUTH
@@ -97,7 +101,7 @@ export default function Register() {
             id_tipo_documento: idTipoDocumento
               ? Number(idTipoDocumento)
               : null,
-            documento_numero: documentoNumero,
+            documento_numero: parsedDocumentoNumero,
           },
         },
       })
@@ -122,7 +126,7 @@ export default function Register() {
           {
             nombre,
             email,
-            telefono,
+            telefono: parsedTelefono,
             direccion,
             auth_id: user.id,
             id_rol: 1,
@@ -133,8 +137,7 @@ export default function Register() {
               : null,
 
             // numero real documento
-            documento_numero:
-              documentoNumero.trim() || null,
+            documento_numero: parsedDocumentoNumero,
           },
         ])
 
@@ -283,6 +286,9 @@ export default function Register() {
             <input
               className={fieldClass}
               placeholder="Numero de documento"
+              type="number"
+              inputMode="numeric"
+              min="0"
               value={documentoNumero}
               required
               onChange={(e) =>
@@ -296,6 +302,9 @@ export default function Register() {
             <input
               className={fieldClass}
               placeholder="Telefono"
+              type="number"
+              inputMode="numeric"
+              min="0"
               value={telefono}
               onChange={(e) =>
                 setTelefono(e.target.value)

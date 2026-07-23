@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { requireAdmin } from "@/lib/admin-auth"
 import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
+import { normalizeIntValue } from "@/lib/number-fields"
 
 export async function GET(request: Request) {
   const admin = await requireAdmin(request)
@@ -45,6 +46,8 @@ export async function POST(request: Request) {
   const password = String(body.password || "").trim()
   const nombre = String(body.nombre || "").trim()
   const idRol = Number(body.id_rol || 1)
+  const telefono = normalizeIntValue(body.telefono)
+  const documentoNumero = normalizeIntValue(body.documento_numero)
 
   if (!email || !password || !nombre) {
     return NextResponse.json({ error: "Nombre, email y contrasena son obligatorios." }, { status: 400 })
@@ -67,12 +70,12 @@ export async function POST(request: Request) {
     {
       nombre,
       email,
-      telefono: body.telefono || null,
+      telefono,
       direccion: body.direccion || null,
       auth_id: created.user.id,
       id_rol: idRol,
       id_tipo_documento: body.id_tipo_documento ? Number(body.id_tipo_documento) : null,
-      documento_numero: body.documento_numero || null,
+      documento_numero: documentoNumero,
     },
   ])
 
@@ -142,6 +145,9 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Supabase no esta configurado." }, { status: 503 })
   }
 
+  const telefono = normalizeIntValue(body.telefono)
+  const documentoNumero = normalizeIntValue(body.documento_numero)
+
   const { data: currentUser, error: currentError } = await admin.supabase
     .from("usuarios")
     .select("id_usuario, auth_id, nombre, email")
@@ -191,11 +197,11 @@ export async function PUT(request: Request) {
     .update({
       nombre,
       email,
-      telefono: body.telefono || null,
+      telefono,
       direccion: body.direccion || null,
       id_rol: idRol,
       id_tipo_documento: idTipoDocumento,
-      documento_numero: body.documento_numero || null,
+      documento_numero: documentoNumero,
     })
     .eq("id_usuario", idUsuario)
 

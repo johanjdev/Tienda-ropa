@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider"
 import Modal from "@/components/Modal"
 import { supabase } from "@/lib/supabase"
 import { formatCOP } from "@/lib/format"
+import { normalizeIntValue } from "@/lib/number-fields"
 
 type Pedido = {
   id_pedido: number
@@ -37,7 +38,7 @@ export default function CuentaPage() {
   useEffect(() => {
     if (!profile) return
     setNombre(profile.nombre ?? "")
-    setTelefono(profile.telefono ?? "")
+    setTelefono(profile.telefono != null ? String(profile.telefono) : "")
     setDireccion(profile.direccion ?? "")
   }, [profile])
 
@@ -75,7 +76,7 @@ export default function CuentaPage() {
         .from("usuarios")
         .update({
           nombre: nombre.trim() || null,
-          telefono: telefono.trim() || null,
+          telefono: normalizeIntValue(telefono),
           direccion: direccion.trim() || null,
         })
         .eq("auth_id", user.id)
@@ -190,7 +191,7 @@ export default function CuentaPage() {
               <input
                 type="text"
                 readOnly
-                value={profile?.documento_numero || ""}
+                value={profile?.documento_numero != null ? String(profile.documento_numero) : ""}
                 placeholder="Sin numero registrado"
                 className="w-full rounded-xl border border-white/10 bg-black/50 px-4 py-3 text-white/60 cursor-not-allowed outline-none"
               />
@@ -213,7 +214,9 @@ export default function CuentaPage() {
                 Teléfono
               </label>
               <input
-                type="tel"
+                type="number"
+                inputMode="numeric"
+                min="0"
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-purple-500 transition"
