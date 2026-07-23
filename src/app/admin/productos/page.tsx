@@ -14,7 +14,11 @@ interface Producto {
   id_categoria: number
   estado: string
   imagen_url: string
+  tallas?: string
+  colores?: string
+  imagenes_adicionales?: string
 }
+
 
 interface Categoria {
   id_categoria: number
@@ -37,6 +41,9 @@ export default function AdminProductosPage() {
   const [categoria, setCategoria] = useState<number | "">("")
   const [estado, setEstado] = useState("activo")
   const [imagen, setImagen] = useState<File | null>(null)
+  const [tallas, setTallas] = useState("")
+  const [colores, setColores] = useState("")
+  const [imagenesAdicionales, setImagenesAdicionales] = useState<File[]>([])
 
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTitle, setModalTitle] = useState("")
@@ -100,6 +107,17 @@ export default function AdminProductosPage() {
       if (url) imageUrl = url
     }
 
+    // Procesar imagenes adicionales
+    let imagenesAdicionalesUrls = ""
+    if (imagenesAdicionales.length > 0) {
+      const urls: string[] = []
+      for (const file of imagenesAdicionales) {
+        const url = await subirImagen(file)
+        if (url) urls.push(url)
+      }
+      imagenesAdicionalesUrls = urls.join("|")
+    }
+
     await supabase.from("productos").insert([
       {
         nombre,
@@ -109,6 +127,9 @@ export default function AdminProductosPage() {
         id_categoria: Number(categoria),
         estado,
         imagen_url: imageUrl,
+        tallas: tallas || null,
+        colores: colores || null,
+        imagenes_adicionales: imagenesAdicionalesUrls || null,
       },
     ])
 
@@ -119,6 +140,9 @@ export default function AdminProductosPage() {
     setCategoria("")
     setEstado("activo")
     setImagen(null)
+    setTallas("")
+    setColores("")
+    setImagenesAdicionales([])
     void fetchProductos()
     setModalTitle("Producto agregado")
     setModalMessage("El producto se agregó correctamente al catálogo.")
@@ -126,11 +150,22 @@ export default function AdminProductosPage() {
     setModalOpen(true)
   }
 
-  const actualizarProducto = async (producto: Producto, nuevaImagen?: File) => {
+  const actualizarProducto = async (producto: Producto, nuevaImagen?: File, nuevasImagenesAdicionales?: File[]) => {
     let imageUrl = producto.imagen_url
     if (nuevaImagen) {
       const url = await subirImagen(nuevaImagen)
       if (url) imageUrl = url
+    }
+
+    // Procesar imagenes adicionales
+    let imagenesAdicionalesUrls = producto.imagenes_adicionales || ""
+    if (nuevasImagenesAdicionales && nuevasImagenesAdicionales.length > 0) {
+      const urls: string[] = []
+      for (const file of nuevasImagenesAdicionales) {
+        const url = await subirImagen(file)
+        if (url) urls.push(url)
+      }
+      imagenesAdicionalesUrls = urls.join("|")
     }
 
     await supabase
@@ -143,6 +178,9 @@ export default function AdminProductosPage() {
         id_categoria: producto.id_categoria,
         estado: producto.estado,
         imagen_url: imageUrl,
+        tallas: producto.tallas || null,
+        colores: producto.colores || null,
+        imagenes_adicionales: imagenesAdicionalesUrls || null,
       })
       .eq("id_producto", producto.id_producto)
 
@@ -309,6 +347,28 @@ export default function AdminProductosPage() {
             className="text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-purple-600 file:px-3 file:py-2 file:text-white"
             onChange={(e) => setImagen(e.target.files?.[0] ?? null)}
           />
+          <input
+            className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500 lg:col-span-2"
+            placeholder="Tallas (ej: XS, S, M, L, XL)"
+            value={tallas}
+            onChange={(e) => setTallas(e.target.value)}
+          />
+          <input
+            className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500 lg:col-span-2"
+            placeholder="Colores (ej: Negro, Blanco, Rojo)"
+            value={colores}
+            onChange={(e) => setColores(e.target.value)}
+          />
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            className="text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-purple-600 file:px-3 file:py-2 file:text-white lg:col-span-2"
+            onChange={(e) => setImagenesAdicionales(Array.from(e.target.files ?? []))}
+          />
+          {imagenesAdicionales.length > 0 && (
+            <p className="text-xs text-purple-300 lg:col-span-3">{imagenesAdicionales.length} imagen(es) seleccionada(s)</p>
+          )}
         </div>
         <button
           type="button"
@@ -442,6 +502,34 @@ export default function AdminProductosPage() {
                           <option value="activo">Disponible</option>
                           <option value="inactivo">No disponible</option>
                         </select>
+                        <input
+                          className="rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white sm:col-span-2"
+                          placeholder="Tallas (ej: XS, S, M, L, XL)"
+                          value={producto.tallas || ""}
+                          onChange={(e) =>
+                            setProductos((prev) =>
+                              prev.map((p) =>
+                                p.id_producto === producto.id_producto
+                                  ? { ...p, tallas: e.target.value }
+                                  : p
+                              )
+                            )
+                          }
+                        />
+                        <input
+                          className="rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white sm:col-span-2"
+                          placeholder="Colores (ej: Negro, Blanco, Rojo)"
+                          value={producto.colores || ""}
+                          onChange={(e) =>
+                            setProductos((prev) =>
+                              prev.map((p) =>
+                                p.id_producto === producto.id_producto
+                                  ? { ...p, colores: e.target.value }
+                                  : p
+                              )
+                            )
+                          }
+                        />
                         <input
                           type="file"
                           accept="image/*"

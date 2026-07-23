@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   description: "Tienda online",
   icons: {
     icon: [
-      { url: "/imagenes/faviicon/favicon.ico", sizes: "any" },
+      { url: "/imagenes/faviicon/favicon-round.svg", sizes: "any", type: "image/svg+xml" },
       { url: "/imagenes/faviicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/imagenes/faviicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
     ],

@@ -59,6 +59,7 @@ export default function HomePage() {
    */
   useEffect(() => {
     const fetchProductos = async () => {
+      setLoading(true)
       const { data, error } = await fetchProductosActivos()
       if (error) {
         setError(error)
@@ -69,8 +70,33 @@ export default function HomePage() {
       setLoading(false)
     }
 
-    fetchProductos()
+    void fetchProductos()
   }, [])
+
+  // Recargar productos cuando la página vuelve a ser visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const fetchProductos = async () => {
+          const { data, error } = await fetchProductosActivos()
+          if (!error) {
+            setProductos(data)
+          }
+        }
+        void fetchProductos()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  // Si no hay loader, mostrar contenido directamente
+  useEffect(() => {
+    if (!showLoader) {
+      setContentVisible(true)
+    }
+  }, [showLoader])
 
   /**
    * handleLoaderDone

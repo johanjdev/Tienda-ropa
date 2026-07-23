@@ -7,6 +7,20 @@ import { useAuth } from "@/components/AuthProvider"
 import { formatCOP } from "@/lib/format"
 import { loadCart, saveCart, type CartItem } from "@/lib/cart-storage"
 
+type ProductoDetalleRaw = {
+  id_producto: number
+  nombre: string
+  descripcion: string | null
+  precio: number
+  imagen_url: string | null
+  stock: number | null
+  estado: string | null
+  tallas?: string | null
+  colores?: string | null
+  imagenes_adicionales?: string | null
+  categorias?: { nombre_categoria?: string | null } | null
+}
+
 type ProductoDetalle = {
   id_producto: number
   nombre: string
@@ -20,6 +34,7 @@ type ProductoDetalle = {
   imagenes_adicionales?: string[] | null
   categorias?: { nombre_categoria?: string | null } | null
 }
+
 
 export default function ProductoPage() {
   const params = useParams()
@@ -40,15 +55,34 @@ export default function ProductoPage() {
       setLoading(true)
       setError(null)
       const res = await fetch(`/api/productos/${id}`, { cache: "no-store" })
-      const body = (await res.json()) as { data?: ProductoDetalle; error?: string }
+      const body = (await res.json()) as { data?: ProductoDetalleRaw; error?: string }
       if (cancelled) return
       if (!res.ok || !body.data) {
         setError(body.error || "No se pudo cargar el producto.")
         setProducto(null)
       } else {
-        setProducto(body.data)
-        if (body.data.tallas?.length) setSelectedTalla(body.data.tallas[0])
-        if (body.data.colores?.length) setSelectedColor(body.data.colores[0])
+        const data = body.data
+        // Parsear strings en arrays
+        const parsedTallas = data.tallas
+          ? data.tallas.split(",").map((t) => t.trim()).filter(Boolean)
+          : []
+        const parsedColores = data.colores
+          ? data.colores.split(",").map((c) => c.trim()).filter(Boolean)
+          : []
+        const parsedImagenes = data.imagenes_adicionales
+          ? data.imagenes_adicionales.split("|").map((i) => i.trim()).filter(Boolean)
+          : []
+        
+        const productoParseado: ProductoDetalle = {
+          ...data,
+          tallas: parsedTallas.length > 0 ? parsedTallas : undefined,
+          colores: parsedColores.length > 0 ? parsedColores : undefined,
+          imagenes_adicionales: parsedImagenes.length > 0 ? parsedImagenes : undefined,
+        }
+        
+        setProducto(productoParseado)
+        if (parsedTallas.length) setSelectedTalla(parsedTallas[0])
+        if (parsedColores.length) setSelectedColor(parsedColores[0])
       }
       setLoading(false)
     }
@@ -65,11 +99,12 @@ export default function ProductoPage() {
 
   const todosImagenes = useMemo(() => {
     if (!producto) return []
-    const imgs = [producto.imagen_url]
-    if (producto.imagenes_adicionales?.length) {
+    const imgs: string[] = []
+    if (producto.imagen_url) imgs.push(producto.imagen_url)
+    if (producto.imagenes_adicionales && Array.isArray(producto.imagenes_adicionales)) {
       imgs.push(...producto.imagenes_adicionales)
     }
-    return imgs.filter(Boolean) as string[]
+    return imgs.filter(Boolean)
   }, [producto])
 
   const imagenActual = todosImagenes[selectedImageIndex] || producto?.imagen_url
@@ -185,7 +220,7 @@ export default function ProductoPage() {
           </p>
 
           {/* TALLAS */}
-          {producto?.tallas && producto.tallas.length > 0 && (
+          {producto?.tallas && Array.isArray(producto.tallas) && producto.tallas.length > 0 && (
             <div className="mb-8">
               <p className="text-sm font-semibold text-white mb-3">Selecciona la Talla</p>
               <div className="flex flex-wrap gap-2">
@@ -207,7 +242,7 @@ export default function ProductoPage() {
           )}
 
           {/* COLORES */}
-          {producto?.colores && producto.colores.length > 0 && (
+          {producto?.colores && Array.isArray(producto.colores) && producto.colores.length > 0 && (
             <div className="mb-8">
               <p className="text-sm font-semibold text-white mb-3">Color</p>
               <div className="flex flex-wrap gap-2">
