@@ -15,6 +15,9 @@ type ProductoDetalle = {
   imagen_url: string | null
   stock: number | null
   estado: string | null
+  tallas?: string[] | null
+  colores?: string[] | null
+  imagenes_adicionales?: string[] | null
   categorias?: { nombre_categoria?: string | null } | null
 }
 
@@ -26,6 +29,10 @@ export default function ProductoPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [added, setAdded] = useState(false)
+  
+  const [selectedTalla, setSelectedTalla] = useState<string | null>(null)
+  const [selectedColor, setSelectedColor] = useState<string | null>(null)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -40,6 +47,8 @@ export default function ProductoPage() {
         setProducto(null)
       } else {
         setProducto(body.data)
+        if (body.data.tallas?.length) setSelectedTalla(body.data.tallas[0])
+        if (body.data.colores?.length) setSelectedColor(body.data.colores[0])
       }
       setLoading(false)
     }
@@ -53,6 +62,17 @@ export default function ProductoPage() {
     () => producto?.estado !== "inactivo" && Number(producto?.stock ?? 1) > 0,
     [producto]
   )
+
+  const todosImagenes = useMemo(() => {
+    if (!producto) return []
+    const imgs = [producto.imagen_url]
+    if (producto.imagenes_adicionales?.length) {
+      imgs.push(...producto.imagenes_adicionales)
+    }
+    return imgs.filter(Boolean) as string[]
+  }, [producto])
+
+  const imagenActual = todosImagenes[selectedImageIndex] || producto?.imagen_url
 
   const addToCart = useCallback(() => {
     if (!producto || !disponible) return
@@ -106,65 +126,133 @@ export default function ProductoPage() {
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white px-4 md:px-8 py-10">
-      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950">
-          {producto.imagen_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={producto.imagen_url}
-              alt={producto.nombre}
-              className="h-[420px] w-full object-cover md:h-[640px]"
-            />
-          ) : (
-            <div className="grid h-[420px] place-items-center text-zinc-600 md:h-[640px]">
-              <i className="ri-image-line text-6xl" aria-hidden />
+      <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-2">
+        
+        {/* GALERÍA IZQUIERDA */}
+        <section className="space-y-4">
+          {/* Imagen principal */}
+          <div className="relative w-full bg-zinc-950 rounded-2xl border border-white/10 overflow-hidden aspect-[3/4]">
+            {imagenActual ? (
+              <img
+                src={imagenActual}
+                alt={producto?.nombre}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-zinc-600">
+                <i className="ri-image-line text-6xl" />
+              </div>
+            )}
+          </div>
+
+          {/* Miniaturas */}
+          {todosImagenes.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {todosImagenes.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImageIndex(idx)}
+                  className={`flex-shrink-0 w-20 h-28 rounded-lg border-2 overflow-hidden transition ${
+                    selectedImageIndex === idx
+                      ? "border-purple-500"
+                      : "border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  <img src={img} alt={`Imagen ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
             </div>
           )}
         </section>
 
-        <section className="flex flex-col justify-center">
-          <Link href="/user" className="mb-8 inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white">
-            <i className="ri-arrow-left-line" aria-hidden />
-            Volver al catalogo
+        {/* DETALLES DERECHA */}
+        <section className="flex flex-col justify-start">
+          <Link href="/user" className="mb-8 inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white w-fit">
+            <i className="ri-arrow-left-line" />
+            Volver
           </Link>
-          <p className="mb-3 text-sm uppercase tracking-widest text-purple-300">
-            {producto.categorias?.nombre_categoria || "Producto"}
-          </p>
-          <h1 className="text-4xl font-black tracking-tight md:text-5xl">{producto.nombre}</h1>
-          <p className="mt-5 text-3xl font-black">{formatCOP(producto.precio)}</p>
-          <p className="mt-6 leading-7 text-zinc-400">
-            {producto.descripcion || "Sin descripcion disponible."}
+
+          <p className="text-sm uppercase tracking-widest text-orange-500 font-bold mb-2">
+            {producto?.categorias?.nombre_categoria || "Lo más nuevo"}
           </p>
 
-          <div className="mt-8 grid gap-3 text-sm text-zinc-400 sm:grid-cols-2">
-            <div className="rounded-xl border border-white/10 bg-zinc-950 p-4">
-              <p className="text-zinc-500">Disponibilidad</p>
-              <p className="mt-1 font-semibold text-white">
-                {disponible ? "Disponible" : "Agotado"}
-              </p>
+          <h1 className="text-3xl md:text-4xl font-black mb-1">{producto?.nombre}</h1>
+          <p className="text-3xl font-black text-white mb-6">{formatCOP(producto?.precio ?? 0)}</p>
+
+          {/* Descripción */}
+          <p className="text-sm text-zinc-400 mb-8 leading-relaxed">
+            {producto?.descripcion || "Sin descripción disponible."}
+          </p>
+
+          {/* TALLAS */}
+          {producto?.tallas && producto.tallas.length > 0 && (
+            <div className="mb-8">
+              <p className="text-sm font-semibold text-white mb-3">Selecciona la Talla</p>
+              <div className="flex flex-wrap gap-2">
+                {producto.tallas.map((talla) => (
+                  <button
+                    key={talla}
+                    onClick={() => setSelectedTalla(talla)}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-semibold transition ${
+                      selectedTalla === talla
+                        ? "bg-white text-black border-white"
+                        : "border-white/30 text-white hover:border-white/50"
+                    }`}
+                  >
+                    {talla}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="rounded-xl border border-white/10 bg-zinc-950 p-4">
-              <p className="text-zinc-500">Stock</p>
-              <p className="mt-1 font-semibold text-white">{producto.stock ?? "Sin dato"}</p>
+          )}
+
+          {/* COLORES */}
+          {producto?.colores && producto.colores.length > 0 && (
+            <div className="mb-8">
+              <p className="text-sm font-semibold text-white mb-3">Color</p>
+              <div className="flex flex-wrap gap-2">
+                {producto.colores.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-semibold transition ${
+                      selectedColor === color
+                        ? "bg-white text-black border-white"
+                        : "border-white/30 text-white hover:border-white/50"
+                    }`}
+                  >
+                    {color}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* INFO STOCK */}
+          <div className="mb-8 flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <div className={`w-3 h-3 rounded-full ${disponible ? "bg-green-500" : "bg-red-500"}`} />
+              <span className={disponible ? "text-green-400" : "text-red-400"}>
+                {disponible ? "Disponible" : "Agotado"}
+              </span>
             </div>
           </div>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          {/* BOTONES */}
+          <div className="space-y-3">
             <button
               type="button"
               disabled={!disponible}
               onClick={addToCart}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-semibold text-black transition hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-full bg-black text-white px-6 py-3 font-bold text-lg transition hover:bg-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
             >
-              <i className="ri-shopping-cart-2-line" aria-hidden />
-              {added ? "Agregado" : "Agregar al carrito"}
+              {added ? "✓ Agregado al carrito" : "Agregar a la bolsa de compras"}
             </button>
             <Link
               href="/cart"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-7 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="inline-block w-full text-center rounded-full border border-white/20 px-6 py-3 font-bold transition hover:bg-white/5"
             >
-              <i className="ri-bank-card-line" aria-hidden />
-              Ir a pagar
+              Ver carrito
             </Link>
           </div>
         </section>

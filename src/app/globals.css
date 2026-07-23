@@ -433,3 +433,22 @@
     flex: 1 0 33.33%; /* cada columna ocupa un tercio del ancho */
   }
 }
+
+/* ============================================================
+   INPUTS NUMÉRICOS - Quitar spinners/selectores
+   ──────────────────────────────────────────────────────────
+   Remueve los botones de aumento/disminución de los inputs
+   de tipo number en navegadores WebKit y Firefox.
+   ============================================================ */
+
+/* Quitar spinners en navegadores WebKit (Chrome, Safari, Edge) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Quitar spinners en Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}

@@ -30,6 +30,7 @@ export default function Catalogo() {
   /** null = ver todas las categorías */
   const [idCategoriaFiltro, setIdCategoriaFiltro] = useState<number | null>(null)
   const [precioMax, setPrecioMax] = useState(1000000)
+  const [activeTab, setActiveTab] = useState<"categoria" | "precio">("categoria")
 
   useEffect(() => {
     const fetchProductos = async () => {
@@ -144,88 +145,83 @@ export default function Catalogo() {
       )}
 
       {/* CONTENEDOR GENERAL */}
-      <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-8">
+      <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-6">
 
         {/* SIDEBAR */}
-        <aside className="w-full lg:w-[320px] rounded-[32px] border border-white/10 bg-zinc-950/95 p-6 shadow-[0_24px_80px_-42px_rgba(0,0,0,0.8)] backdrop-blur-sm h-fit sticky top-24">
+        <aside className="w-full lg:w-[340px] rounded-[24px] border border-white/10 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 p-6 shadow-xl backdrop-blur-sm h-fit sticky top-24">
 
-          <div className="mb-8 flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm uppercase tracking-[0.35em] text-white/40">
-                Filtros
-              </p>
-              <h2 className="mt-3 text-2xl font-bold text-white">
-                Refina tu búsqueda
-              </h2>
-            </div>
-            <div className="rounded-full bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.25em] text-white/70">
-              {filtered.length}
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-white mb-2">Filtros</h2>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-white/60">Resultados</p>
+              <span className="inline-block bg-purple-600/30 border border-purple-500/40 text-purple-300 px-3 py-1 rounded-full text-xs font-semibold">
+                {filtered.length}
+              </span>
             </div>
           </div>
 
           {/* BUSCADOR */}
-          <div className="mb-8 space-y-3">
-            <p className="text-sm uppercase tracking-[0.35em] text-white/40">
+          <div className="mb-6 space-y-2">
+            <p className="text-xs uppercase tracking-wider text-white/50 font-semibold">
               Buscar
             </p>
-
             <input
               type="text"
-              placeholder="Buscar producto..."
+              placeholder="Escribe aquí..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-zinc-500 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none transition focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30"
             />
           </div>
 
-          {/* CATEGORÍAS */}
-          <div className="mb-8 space-y-3">
-            <p className="text-sm uppercase tracking-[0.35em] text-white/40">
-              Categorías
+          {/* CATEGORÍAS CON CHIPS */}
+          <div className="mb-6 space-y-3">
+            <p className="text-xs uppercase tracking-wider text-white/50 font-semibold">
+              Categoría
             </p>
-
-            <select
-              value={idCategoriaFiltro ?? ""}
-              onChange={(e) =>
-                setIdCategoriaFiltro(
-                  e.target.value === "" ? null : Number(e.target.value)
-                )
-              }
-              className="w-full rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
-            >
-              <option value="">Todos</option>
-
+            <div className="space-y-2">
+              <button
+                onClick={() => setIdCategoriaFiltro(null)}
+                className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  idCategoriaFiltro === null
+                    ? "bg-purple-600 text-white border border-purple-500"
+                    : "bg-white/5 text-white/70 border border-white/10 hover:bg-white/10"
+                }`}
+              >
+                Todas
+              </button>
               {categoriasDb.map((cat) => (
-                <option
+                <button
                   key={cat.id_categoria}
-                  value={cat.id_categoria}
+                  onClick={() => setIdCategoriaFiltro(cat.id_categoria)}
+                  className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    idCategoriaFiltro === cat.id_categoria
+                      ? "bg-purple-600 text-white border border-purple-500"
+                      : "bg-white/5 text-white/70 border border-white/10 hover:bg-white/10"
+                  }`}
                 >
                   {cat.nombre_categoria}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* PRECIO */}
-          <div className="mb-4 space-y-4">
-            <p className="text-sm uppercase tracking-[0.35em] text-white/40">
+          <div className="space-y-3">
+            <p className="text-xs uppercase tracking-wider text-white/50 font-semibold">
               Precio máximo
             </p>
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
               <input
                 type="range"
                 min="10000"
                 max="1000000"
                 step="10000"
                 value={precioMax}
-                onChange={(e) =>
-                  setPrecioMax(Number(e.target.value))
-                }
-                className="w-full accent-purple-500"
+                onChange={(e) => setPrecioMax(Number(e.target.value))}
+                className="w-full accent-purple-500 cursor-pointer"
               />
-
-              <p className="mt-3 text-sm text-white/70">
+              <p className="mt-3 text-sm font-semibold text-white">
                 {formatCOP(precioMax)}
               </p>
             </div>
@@ -233,88 +229,69 @@ export default function Catalogo() {
         </aside>
 
         {/* CONTENIDO */}
-        <main className="flex-1">
+        <main className="flex-1 min-h-screen">
 
           {/* HEADER */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-
-            <div>
-              <h1 className="text-4xl font-black mb-2">
-                Catálogo
-              </h1>
-
-              <p className="text-white/50">
-                {filtered.length} productos
-              </p>
-            </div>
-
-            {/* TAGS ACTIVOS */}
-            <div className="flex flex-wrap gap-3">
-
-              {nombreFiltroActivo && (
-                <div className="bg-purple-600/20 border border-purple-500/30 text-purple-300 px-4 py-2 rounded-full text-sm capitalize">
-                  {nombreFiltroActivo}
-                </div>
-              )}
-
-              {search && (
-                <div className="bg-white/10 border border-white/10 px-4 py-2 rounded-full text-sm">
-                  {search}
-                </div>
-              )}
-            </div>
+          <div className="mb-8">
+            <h1 className="text-4xl md:text-5xl font-black text-white mb-2">
+              Productos
+            </h1>
+            <p className="text-white/50 text-lg">
+              {filtered.length} {filtered.length === 1 ? "producto disponible" : "productos disponibles"}
+            </p>
           </div>
 
           {/* GRID */}
           {filtered.length === 0 ? (
-            <div className="bg-zinc-950 border border-white/10 rounded-3xl p-10 text-center text-white/50">
-              No se encontraron productos
+            <div className="flex items-center justify-center min-h-[400px] rounded-2xl border border-white/10 bg-white/5">
+              <div className="text-center">
+                <p className="text-white/60 text-lg font-medium">No se encontraron productos</p>
+                <p className="text-white/40 text-sm mt-2">Intenta con otros filtros</p>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 
               {filtered.map((producto) => (
                 <div
                   key={producto.id_producto}
-                  className="group overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/70 shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-purple-500/30"
+                  className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/50 flex flex-col h-full"
                 >
-                  <Link href={`/producto/${producto.id_producto}`} className="block overflow-hidden">
-                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-900">
+                  <Link href={`/producto/${producto.id_producto}`} className="block overflow-hidden flex-1">
+                    <div className="relative aspect-[3/4] w-full overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950">
                       {producto.imagen_url ? (
                         <img
                           src={producto.imagen_url}
                           alt={producto.nombre}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-white/5 text-zinc-500">
+                        <div className="flex h-full w-full items-center justify-center bg-white/5 text-zinc-600 font-medium">
                           Sin imagen
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
-                      <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-                        <p className="text-xs uppercase tracking-[0.3em] text-white/50">
-                          {etiquetaCategoriaProducto(producto)}
-                        </p>
-                        <h3 className="mt-3 text-2xl font-black leading-tight">
-                          {producto.nombre}
-                        </h3>
-                        <p className="mt-2 text-sm text-white/70 line-clamp-2">
-                          {producto.descripcion}
-                        </p>
-                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
                   </Link>
 
-                  <div className="p-5">
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="text-2xl font-black text-white">
+                  <div className="p-4 flex flex-col flex-1 justify-between">
+                    <div className="mb-3">
+                      <p className="text-xs uppercase tracking-wider text-purple-400/70 font-semibold mb-2">
+                        {etiquetaCategoriaProducto(producto)}
+                      </p>
+                      <h3 className="text-sm font-bold text-white leading-snug line-clamp-2 group-hover:text-purple-300 transition">
+                        {producto.nombre}
+                      </h3>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-3 border-t border-white/10">
+                      <p className="text-lg font-black text-white">
                         {formatCOP(producto.precio)}
                       </p>
                       <button
                         type="button"
                         onClick={() => addToCart(producto)}
-                        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:opacity-90"
+                        className="rounded-lg bg-purple-600 hover:bg-purple-700 px-3 py-2 text-xs font-bold text-white transition-colors duration-200 active:scale-95"
                       >
                         Añadir
                       </button>

@@ -41,7 +41,14 @@ export default function HomePage() {
   const [hoveredId, setHoveredId] = useState<number | null>(null)
 
   /** Controla si el loader sigue montado en el DOM */
-  const [showLoader, setShowLoader] = useState(true)
+  const [showLoader, setShowLoader] = useState(() => {
+    // Solo mostrar el loader si es la primera vez en esta sesión
+    if (typeof window !== "undefined") {
+      const loaderShown = sessionStorage.getItem("loader_shown")
+      return !loaderShown
+    }
+    return true
+  })
 
   /** Controla la opacidad del contenido principal (fade-in después del loader) */
   const [contentVisible, setContentVisible] = useState(false)
@@ -68,10 +75,12 @@ export default function HomePage() {
   /**
    * handleLoaderDone
    * Callback que recibe el PageLoader cuando termina su animación de salida.
-   * 1. Desmonta el loader del DOM.
-   * 2. Espera 50 ms y activa el fade-in del contenido principal.
+   * 1. Marca en sessionStorage que el loader ya se mostró.
+   * 2. Desmonta el loader del DOM.
+   * 3. Espera 50 ms y activa el fade-in del contenido principal.
    */
   const handleLoaderDone = () => {
+    sessionStorage.setItem("loader_shown", "true")
     setShowLoader(false)
     // Pequeño delay para que el navegador pinte el loader fuera antes de mostrar el contenido
     setTimeout(() => setContentVisible(true), 50)
@@ -173,7 +182,7 @@ export default function HomePage() {
           <div className="max-w-[1600px] mx-auto px-4 pb-10 sm:px-6 lg:px-8">
 
             {/* Título de la sección */}
-            <h2 className="text-white overline text-5xl mb-10 justify-center flex max-sm:text-3xl max-md:text-4xl tracking-widest">
+            <h2 className="text-white text-5xl mb-10 justify-center flex max-sm:text-3xl max-md:text-4xl tracking-widest">
               PRODUCTOS MÁS VENDIDOS
             </h2>
 

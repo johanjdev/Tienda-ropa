@@ -66,13 +66,6 @@ export default function Navbar() {
                 <IoMenuOutline className="h-6 w-6" />
               )}
             </button>
-
-            <Link
-              href="/"
-              className="text-lg font-semibold text-white hover:text-purple-300 transition"
-            >
-              Tienda
-            </Link>
           </div>
 
           <div className="hidden sm:flex gap-6">
