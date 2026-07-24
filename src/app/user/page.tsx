@@ -6,6 +6,7 @@ import { fetchProductosActivos, type CategoriaCatalogo } from "@/lib/fetch-produ
 import { loadCart, saveCart, type CartItem } from "@/lib/cart-storage"
 import Link from "next/link"
 import { formatCOP } from "@/lib/format"
+import FiltrosModal from "@/components/FiltrosModal"
 
 interface Producto {
   id_producto: number
@@ -30,6 +31,8 @@ export default function Catalogo() {
   /** null = ver todas las categorías */
   const [idCategoriaFiltro, setIdCategoriaFiltro] = useState<number | null>(null)
   const [precioMax, setPrecioMax] = useState(1000000)
+  const [activeTab, setActiveTab] = useState<"categoria" | "precio">("categoria")
+  const [filtrosOpen, setFiltrosOpen] = useState(false)
 
   useEffect(() => {
     const fetchProductos = async () => {
@@ -134,209 +137,253 @@ export default function Catalogo() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white px-4 md:px-8 py-10">
+    <>
+      {/* MODAL DE FILTROS MOBILE */}
+      <FiltrosModal
+        open={filtrosOpen}
+        onClose={() => setFiltrosOpen(false)}
+        categoriasDb={categoriasDb}
+        search={search}
+        onSearchChange={setSearch}
+        idCategoriaFiltro={idCategoriaFiltro}
+        onCategoriaChange={setIdCategoriaFiltro}
+        precioMax={precioMax}
+        onPrecioChange={setPrecioMax}
+        resultados={filtered.length}
+      />
 
-      {loadError && (
-        <div className="max-w-[1600px] mx-auto mb-6 rounded-2xl border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">
-          <p className="font-semibold mb-1">No se pudieron cargar los productos</p>
-          <p className="text-red-200/90">{loadError}</p>
-        </div>
-      )}
+      <div className="min-h-screen bg-[#0a0a0a] text-white px-4 md:px-8 py-10">
 
-      {/* CONTENEDOR GENERAL */}
-      <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-8">
+        {loadError && (
+          <div className="max-w-[1600px] mx-auto mb-6 rounded-2xl border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">
+            <p className="font-semibold mb-1">No se pudieron cargar los productos</p>
+            <p className="text-red-200/90">{loadError}</p>
+          </div>
+        )}
 
-        {/* SIDEBAR */}
-        <aside className="w-full lg:w-[280px] bg-zinc-950 border border-white/10 rounded-3xl p-6 h-fit sticky top-28">
-
-          <h2 className="text-xl font-bold mb-8">
+        {/* HEADER CON BOTÓN DE FILTROS */}
+        <div className="max-w-[1600px] mx-auto mb-8 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-black text-white mb-2">
+              Productos
+            </h1>
+            <p className="text-white/50 text-lg">
+              {filtered.length} {filtered.length === 1 ? "producto" : "productos"}
+            </p>
+          </div>
+          <button
+            onClick={() => setFiltrosOpen(true)}
+            className="lg:hidden flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold transition"
+          >
+            <i className="ri-filter-line text-xl" />
             Filtros
-          </h2>
+          </button>
+        </div>
 
-          {/* BUSCADOR */}
-          <div className="mb-8">
-            <p className="text-sm uppercase tracking-widest text-white/40 mb-3">
-              Buscar
-            </p>
+        {/* CONTENEDOR GENERAL */}
+        <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-6">
 
-            <input
-              type="text"
-              placeholder="Buscar producto..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="
-                w-full
-                bg-black
-                border
-                border-white/10
-                rounded-xl
-                px-4
-                py-3
-                outline-none
-                focus:border-purple-500
-                transition
-              "
-            />
-          </div>
+          {/* SIDEBAR - DESKTOP ONLY */}
+          <aside className="hidden lg:block w-[340px] rounded-[24px] border border-white/10 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 p-6 shadow-xl backdrop-blur-sm h-fit sticky top-24 overflow-hidden">
 
-          {/* CATEGORÍAS */}
-          <div className="mb-8">
-            <p className="text-sm uppercase tracking-widest text-white/40 mb-4">
-              Categorías
-            </p>
+            {/* Efecto decorativo superior */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
 
-            <select
-              value={idCategoriaFiltro ?? ""}
-              onChange={(e) =>
-                setIdCategoriaFiltro(
-                  e.target.value === "" ? null : Number(e.target.value)
-                )
-              }
-              className="
-                w-full
-                px-4
-                py-3
-                rounded-xl
-                bg-black
-                border
-                border-white/10
-                text-white
-                focus:outline-none
-                focus:border-purple-500
-              "
-            >
-              <option value="">Todos</option>
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                <i className="ri-equalizer-line text-purple-400" aria-hidden />
+                Filtros
+              </h2>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-white/60">Resultados</p>
+                <span className="inline-block bg-purple-600/30 border border-purple-500/40 text-purple-300 px-3 py-1 rounded-full text-xs font-semibold tabular-nums">
+                  {filtered.length}
+                </span>
+              </div>
+            </div>
 
-              {categoriasDb.map((cat) => (
-                <option
-                  key={cat.id_categoria}
-                  value={cat.id_categoria}
-                >
-                  {cat.nombre_categoria}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* PRECIO */}
-          <div className="mb-4">
-            <p className="text-sm uppercase tracking-widest text-white/40 mb-4">
-              Precio máximo
-            </p>
-
-            <input
-              type="range"
-              min="10000"
-              max="1000000"
-              step="10000"
-              value={precioMax}
-              onChange={(e) =>
-                setPrecioMax(Number(e.target.value))
-              }
-              className="w-full accent-purple-500"
-            />
-
-            <p className="mt-3 text-white/70">
-              ${new Intl.NumberFormat("es-CO").format(precioMax)}
-            </p>
-          </div>
-        </aside>
-
-        {/* CONTENIDO */}
-        <main className="flex-1">
-
-          {/* HEADER */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-
-            <div>
-              <h1 className="text-4xl font-black mb-2">
-                Catálogo
-              </h1>
-
-              <p className="text-white/50">
-                {filtered.length} productos
+            {/* BUSCADOR PREMIUM */}
+            <div className="mb-6 space-y-2">
+              <p className="text-xs uppercase tracking-wider text-white/50 font-semibold">
+                Buscar
               </p>
+              <div className="relative group">
+                <i className="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-purple-400 transition-colors" aria-hidden />
+                <input
+                  type="text"
+                  placeholder="Buscar producto..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 pl-10 pr-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white/[0.08]"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                  >
+                    <i className="ri-close-circle-fill text-sm" />
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* TAGS ACTIVOS */}
-            <div className="flex flex-wrap gap-3">
-
-              {nombreFiltroActivo && (
-                <div className="bg-purple-600/20 border border-purple-500/30 text-purple-300 px-4 py-2 rounded-full text-sm capitalize">
-                  {nombreFiltroActivo}
-                </div>
-              )}
-
-              {search && (
-                <div className="bg-white/10 border border-white/10 px-4 py-2 rounded-full text-sm">
-                  {search}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* GRID */}
-          {filtered.length === 0 ? (
-            <div className="bg-zinc-950 border border-white/10 rounded-3xl p-10 text-center text-white/50">
-              No se encontraron productos
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-
-              {filtered.map((producto) => (
-                <div
-                  key={producto.id_producto}
-                  className="group overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/70 shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-purple-500/30"
+            {/* CATEGORÍAS COMO PILLS PREMIUM */}
+            <div className="mb-6 space-y-3">
+              <p className="text-xs uppercase tracking-wider text-white/50 font-semibold">
+                Categoría
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setIdCategoriaFiltro(null)}
+                  className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 border ${
+                    idCategoriaFiltro === null
+                      ? "bg-gradient-to-r from-purple-600 to-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/25 scale-105"
+                      : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white"
+                  }`}
                 >
-                  <Link href={`/producto/${producto.id_producto}`} className="block overflow-hidden">
-                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-900">
-                      {producto.imagen_url ? (
-                        <img
-                          src={producto.imagen_url}
-                          alt={producto.nombre}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-white/5 text-zinc-500">
-                          Sin imagen
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
-                      <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-                        <p className="text-xs uppercase tracking-[0.3em] text-white/50">
+                  ✦ Todas
+                </button>
+                {categoriasDb.map((cat) => (
+                  <button
+                    key={cat.id_categoria}
+                    onClick={() => setIdCategoriaFiltro(cat.id_categoria)}
+                    className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 border ${
+                      idCategoriaFiltro === cat.id_categoria
+                        ? "bg-gradient-to-r from-purple-600 to-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/25 scale-105"
+                        : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white"
+                    }`}
+                  >
+                    {cat.nombre_categoria}
+                  </button>
+                ))}
+              </div>
+              {nombreFiltroActivo && (
+                <button
+                  onClick={() => setIdCategoriaFiltro(null)}
+                  className="inline-flex items-center gap-1.5 text-xs text-purple-300 hover:text-purple-200 transition-colors mt-1"
+                >
+                  <i className="ri-close-circle-line" />
+                  Quitar filtro: {nombreFiltroActivo}
+                </button>
+              )}
+            </div>
+
+            {/* PRECIO PREMIUM */}
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-wider text-white/50 font-semibold">
+                Precio máximo
+              </p>
+              <div className="bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs text-zinc-500">{formatCOP(10000)}</span>
+                  <span className="text-xs text-zinc-500">{formatCOP(1000000)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="10000"
+                  max="1000000"
+                  step="10000"
+                  value={precioMax}
+                  onChange={(e) => setPrecioMax(Number(e.target.value))}
+                  className="w-full accent-purple-500 cursor-pointer h-2"
+                  style={{
+                    background: `linear-gradient(to right, #7c3aed ${((precioMax - 10000) / (1000000 - 10000)) * 100}%, rgba(255,255,255,0.1) ${((precioMax - 10000) / (1000000 - 10000)) * 100}%)`,
+                    borderRadius: '9999px',
+                  }}
+                />
+                <div className="mt-4 text-center">
+                  <span className="inline-block bg-purple-600/20 border border-purple-500/30 text-purple-200 px-4 py-2 rounded-xl text-lg font-black tabular-nums">
+                    {formatCOP(precioMax)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* BOTÓN LIMPIAR FILTROS */}
+            {(search || idCategoriaFiltro !== null || precioMax < 1000000) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("")
+                  setIdCategoriaFiltro(null)
+                  setPrecioMax(1000000)
+                }}
+                className="mt-5 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-zinc-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <i className="ri-refresh-line" />
+                Limpiar todos los filtros
+              </button>
+            )}
+          </aside>
+
+          {/* CONTENIDO */}
+          <main className="flex-1 min-h-screen">
+
+            {/* GRID */}
+            {filtered.length === 0 ? (
+              <div className="flex items-center justify-center min-h-[400px] rounded-2xl border border-white/10 bg-white/5">
+                <div className="text-center">
+                  <p className="text-white/60 text-lg font-medium">No se encontraron productos</p>
+                  <p className="text-white/40 text-sm mt-2">Intenta con otros filtros</p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+
+                {filtered.map((producto) => (
+                  <div
+                    key={producto.id_producto}
+                    className="group overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/50 flex flex-col h-full"
+                  >
+                    <Link href={`/producto/${producto.id_producto}`} className="block overflow-hidden flex-1">
+                      <div className="relative aspect-[3/4] w-full overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950">
+                        {producto.imagen_url ? (
+                          <img
+                            src={producto.imagen_url}
+                            alt={producto.nombre}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-white/5 text-zinc-600 font-medium text-xs">
+                            Sin imagen
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </div>
+                    </Link>
+
+                    <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between">
+                      <div className="mb-2 sm:mb-3">
+                        <p className="text-xs uppercase tracking-wider text-purple-400/70 font-semibold line-clamp-1 mb-1">
                           {etiquetaCategoriaProducto(producto)}
                         </p>
-                        <h3 className="mt-3 text-2xl font-black leading-tight">
+                        <h3 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 group-hover:text-purple-300 transition">
                           {producto.nombre}
                         </h3>
-                        <p className="mt-2 text-sm text-white/70 line-clamp-2">
-                          {producto.descripcion}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-2 sm:pt-3 border-t border-white/10">
+                        <p className="text-sm sm:text-lg font-black text-white">
+                          {formatCOP(producto.precio)}
                         </p>
+                        <button
+                          type="button"
+                          onClick={() => addToCart(producto)}
+                          className="rounded-lg bg-purple-600 hover:bg-purple-700 px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-white transition-colors duration-200 active:scale-95"
+                        >
+                          Añadir
+                        </button>
                       </div>
                     </div>
-                  </Link>
-
-                  <div className="p-5">
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="text-2xl font-black text-white">
-                        {formatCOP(producto.precio)}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => addToCart(producto)}
-                        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:opacity-90"
-                      >
-                        Añadir
-                      </button>
-                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-            </div>
-          )}
-        </main>
+              </div>
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

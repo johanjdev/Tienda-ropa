@@ -3,17 +3,18 @@
 import { useCallback, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import Modal from "@/components/Modal"
+import { normalizeIntValue } from "@/lib/number-fields"
 
 type UsuarioRow = {
   id_usuario: number
   auth_id?: string | null
   nombre: string | null
   email: string | null
-  telefono?: string | null
+  telefono?: number | null
   direccion?: string | null
   id_rol: number | null
   id_tipo_documento?: number | null
-  documento_numero?: string | null
+  documento_numero?: number | null
 }
 
 type RolRow = {
@@ -98,13 +99,18 @@ export default function AdminUsuariosPage() {
   const createUser = async () => {
     setSaving(true)
     setMessage(null)
+    const payload = {
+      ...form,
+      telefono: normalizeIntValue(form.telefono),
+      documento_numero: normalizeIntValue(form.documento_numero),
+    }
     const res = await fetch("/api/admin/usuarios", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(await authHeaders()),
       },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     })
     const body = await res.json()
     if (res.ok) {
@@ -138,11 +144,11 @@ export default function AdminUsuariosPage() {
       nombre: usuario.nombre || "",
       email: usuario.email || "",
       password: "",
-      telefono: usuario.telefono || "",
+      telefono: usuario.telefono != null ? String(usuario.telefono) : "",
       direccion: usuario.direccion || "",
       id_rol: String(usuario.id_rol || 1),
       id_tipo_documento: usuario.id_tipo_documento ? String(usuario.id_tipo_documento) : "",
-      documento_numero: usuario.documento_numero || "",
+      documento_numero: usuario.documento_numero != null ? String(usuario.documento_numero) : "",
     })
   }
 
@@ -165,13 +171,18 @@ export default function AdminUsuariosPage() {
   const updateUser = async () => {
     setSaving(true)
     setMessage(null)
+    const payload = {
+      ...editForm,
+      telefono: normalizeIntValue(editForm.telefono),
+      documento_numero: normalizeIntValue(editForm.documento_numero),
+    }
     const res = await fetch("/api/admin/usuarios", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         ...(await authHeaders()),
       },
-      body: JSON.stringify(editForm),
+      body: JSON.stringify(payload),
     })
     const body = await res.json()
     if (res.ok) {
@@ -256,7 +267,9 @@ export default function AdminUsuariosPage() {
           ].map(([key, label]) => (
             <input
               key={key}
-              type={key === "password" ? "password" : key === "email" ? "email" : "text"}
+              type={key === "password" ? "password" : key === "email" ? "email" : key === "telefono" || key === "documento_numero" ? "number" : "text"}
+              inputMode={key === "telefono" || key === "documento_numero" ? "numeric" : undefined}
+              min={key === "telefono" || key === "documento_numero" ? "0" : undefined}
               value={form[key as keyof typeof form]}
               placeholder={label}
               onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
@@ -426,6 +439,9 @@ export default function AdminUsuariosPage() {
                       </td>
                       <td className="min-w-[180px] px-4 py-3">
                         <input
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
                           value={editForm.documento_numero}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, documento_numero: e.target.value }))}
                           className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white outline-none focus:border-purple-500"
@@ -433,6 +449,9 @@ export default function AdminUsuariosPage() {
                       </td>
                       <td className="min-w-[160px] px-4 py-3">
                         <input
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
                           value={editForm.telefono}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, telefono: e.target.value }))}
                           className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white outline-none focus:border-purple-500"
@@ -474,8 +493,8 @@ export default function AdminUsuariosPage() {
                       <td className="px-4 py-3 text-zinc-400">
                         {tiposDocumento.find((tipo) => Number(tipo.id_tipo_documento) === Number(usuario.id_tipo_documento))?.descripcion || usuario.id_tipo_documento || "-"}
                       </td>
-                      <td className="px-4 py-3 text-zinc-400">{usuario.documento_numero || "-"}</td>
-                      <td className="px-4 py-3 text-zinc-400">{usuario.telefono || "-"}</td>
+                      <td className="px-4 py-3 text-zinc-400">{usuario.documento_numero != null ? usuario.documento_numero : "-"}</td>
+                      <td className="px-4 py-3 text-zinc-400">{usuario.telefono != null ? usuario.telefono : "-"}</td>
                       <td className="max-w-[260px] break-words px-4 py-3 text-zinc-400">{usuario.direccion || "-"}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">

@@ -17,12 +17,12 @@ export type UsuarioPerfil = {
   id_usuario?: number
   nombre: string | null
   email: string | null
-  telefono: string | null
+  telefono: number | null
   direccion: string | null
   auth_id: string | null
   id_rol?: number | null
   id_tipo_documento?: number | null
-  documento_numero?: string | null
+  documento_numero?: number | null
 }
 
 type AuthContextValue = {

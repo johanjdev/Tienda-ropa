@@ -6,6 +6,8 @@ type OrderItem = {
   id_producto: number
   cantidad: number
   precio: number
+  talla?: string | null
+  color?: string | null
 }
 
 type Body = {
@@ -122,17 +124,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: pedidoError.message }, { status: 400 })
   }
 
-  const detalles = items.map((item) => ({
+  const detallesWithAttributes = items.map((item) => ({
     id_pedido: pedido.id_pedido,
     id_producto: Number(item.id_producto),
     cantidad: Number(item.cantidad),
     precio_unitario: Number(item.precio),
     subtotal: Number(item.precio) * Number(item.cantidad),
+    talla: item.talla || null,
+    color: item.color || null,
   }))
 
-  const { error: detalleError } = await supabase.from("detalle_pedidos").insert(detalles)
+  const { error: detalleError } = await supabase.from("detalle_pedidos").insert(detallesWithAttributes)
   if (detalleError) {
-    return NextResponse.json({ error: detalleError.message }, { status: 400 })
+    const isMissingColumns = 
+      detalleError.code === "PGRST204" || 
+      detalleError.message.includes("talla") || 
+      detalleError.message.includes("color")
+
+    if (isMissingColumns) {
+      const detallesBasic = detallesWithAttributes.map(({ id_pedido, id_producto, cantidad, precio_unitario, subtotal }) => ({
+        id_pedido,
+        id_producto,
+        cantidad,
+        precio_unitario,
+        subtotal,
+      }))
+      const { error: retryError } = await supabase.from("detalle_pedidos").insert(detallesBasic)
+      if (retryError) return NextResponse.json({ error: retryError.message }, { status: 400 })
+    } else {
+      return NextResponse.json({ error: detalleError.message }, { status: 400 })
+    }
   }
 
   if (cuponAplicado && cuponAplicado.uso_maximo !== null) {

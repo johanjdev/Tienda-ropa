@@ -129,8 +129,10 @@ export default function LoginPage() {
         roleName === "administrador" ||
         roleName === "admin"
 
-      // Redirigir según el rol
-      window.location.href = isAdmin ? "/admin" : "/"
+      // Redirigir según el rol o parámetro redirect
+      const searchParams = new URLSearchParams(window.location.search)
+      const redirectUrl = searchParams.get("redirect")
+      window.location.href = isAdmin ? "/admin" : (redirectUrl || "/")
     } catch (err) {
       setModalTitle("Error al iniciar sesion")
       setModalMessage(err.message || "No se pudo iniciar sesion.")

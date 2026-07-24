@@ -14,7 +14,11 @@ interface Producto {
   id_categoria: number
   estado: string
   imagen_url: string
+  tallas?: string
+  colores?: string
+  imagenes_adicionales?: string
 }
+
 
 interface Categoria {
   id_categoria: number
@@ -37,6 +41,9 @@ export default function AdminProductosPage() {
   const [categoria, setCategoria] = useState<number | "">("")
   const [estado, setEstado] = useState("activo")
   const [imagen, setImagen] = useState<File | null>(null)
+  const [tallas, setTallas] = useState("")
+  const [colores, setColores] = useState("")
+  const [imagenesAdicionales, setImagenesAdicionales] = useState<File[]>([])
 
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTitle, setModalTitle] = useState("")
@@ -49,12 +56,28 @@ export default function AdminProductosPage() {
   const [confirmLabel, setConfirmLabel] = useState("Eliminar")
 
   const fetchProductos = useCallback(async () => {
-    const { data } = await supabase.from("productos").select("*").order("id_producto", { ascending: false })
+    const { data, error } = await supabase.from("productos").select("*").order("id_producto", { ascending: false })
+    if (error) {
+      console.error("Error al cargar productos:", error)
+      setModalTitle("Error al cargar productos")
+      setModalMessage(error.message || "No se pudieron obtener los productos de la base de datos.")
+      setModalVariant("error")
+      setModalOpen(true)
+      return
+    }
     if (data) setProductos(data as Producto[])
   }, [])
 
   const fetchCategorias = useCallback(async () => {
-    const { data } = await supabase.from("categorias").select("*").order("id_categoria")
+    const { data, error } = await supabase.from("categorias").select("*").order("id_categoria")
+    if (error) {
+      console.error("Error al cargar categorías:", error)
+      setModalTitle("Error al cargar categorías")
+      setModalMessage(error.message || "No se pudieron obtener las categorías.")
+      setModalVariant("error")
+      setModalOpen(true)
+      return
+    }
     if (data) setCategorias(data as Categoria[])
   }, [])
 
@@ -100,8 +123,36 @@ export default function AdminProductosPage() {
       if (url) imageUrl = url
     }
 
-    await supabase.from("productos").insert([
-      {
+    // Procesar imagenes adicionales
+    let imagenesAdicionalesUrls = ""
+    if (imagenesAdicionales.length > 0) {
+      const urls: string[] = []
+      for (const file of imagenesAdicionales) {
+        const url = await subirImagen(file)
+        if (url) urls.push(url)
+      }
+      imagenesAdicionalesUrls = urls.join("|")
+    }
+
+    let insertPayload: any = {
+      nombre,
+      descripcion,
+      precio: Number(precio),
+      stock: Number(stockNuevo) || 0,
+      id_categoria: Number(categoria),
+      estado,
+      imagen_url: imageUrl,
+      tallas: tallas || null,
+      colores: colores || null,
+      imagenes_adicionales: imagenesAdicionalesUrls || null,
+    }
+
+    let { error: insertError } = await supabase.from("productos").insert([insertPayload])
+    let missingColumnsWarning = false
+
+    if (insertError && insertError.code === "PGRST204") {
+      // Reintentar sin las columnas extendidas que podrían no existir en la base de datos
+      const fallbackPayload = {
         nombre,
         descripcion,
         precio: Number(precio),
@@ -109,8 +160,23 @@ export default function AdminProductosPage() {
         id_categoria: Number(categoria),
         estado,
         imagen_url: imageUrl,
-      },
-    ])
+      }
+      const { error: fallbackError } = await supabase.from("productos").insert([fallbackPayload])
+      if (fallbackError) {
+        setModalTitle("Error al crear producto")
+        setModalMessage(fallbackError.message || "No se pudo insertar el producto.")
+        setModalVariant("error")
+        setModalOpen(true)
+        return
+      }
+      missingColumnsWarning = true
+    } else if (insertError) {
+      setModalTitle("Error al crear producto")
+      setModalMessage(insertError.message || "No se pudo insertar el producto.")
+      setModalVariant("error")
+      setModalOpen(true)
+      return
+    }
 
     setNombre("")
     setDescripcion("")
@@ -119,23 +185,64 @@ export default function AdminProductosPage() {
     setCategoria("")
     setEstado("activo")
     setImagen(null)
+    setTallas("")
+    setColores("")
+    setImagenesAdicionales([])
     void fetchProductos()
-    setModalTitle("Producto agregado")
-    setModalMessage("El producto se agregó correctamente al catálogo.")
-    setModalVariant("info")
+
+    if (missingColumnsWarning) {
+      setModalTitle("Producto agregado (Con Advertencia)")
+      setModalMessage("El producto se creó con éxito, pero tu base de datos no cuenta con las columnas 'tallas', 'colores' o 'imagenes_adicionales'. Agrégalas en Supabase para poder usarlas.")
+      setModalVariant("info")
+    } else {
+      setModalTitle("Producto agregado")
+      setModalMessage("El producto se agregó correctamente al catálogo.")
+      setModalVariant("info")
+    }
     setModalOpen(true)
   }
 
-  const actualizarProducto = async (producto: Producto, nuevaImagen?: File) => {
+  const actualizarProducto = async (producto: Producto, nuevaImagen?: File, nuevasImagenesAdicionales?: File[]) => {
     let imageUrl = producto.imagen_url
     if (nuevaImagen) {
       const url = await subirImagen(nuevaImagen)
       if (url) imageUrl = url
     }
 
-    await supabase
+    // Procesar imagenes adicionales
+    let imagenesAdicionalesUrls = producto.imagenes_adicionales || ""
+    if (nuevasImagenesAdicionales && nuevasImagenesAdicionales.length > 0) {
+      const urls: string[] = []
+      for (const file of nuevasImagenesAdicionales) {
+        const url = await subirImagen(file)
+        if (url) urls.push(url)
+      }
+      imagenesAdicionalesUrls = urls.join("|")
+    }
+
+    const updatePayload: any = {
+      nombre: producto.nombre,
+      descripcion: producto.descripcion,
+      precio: producto.precio,
+      stock: producto.stock,
+      id_categoria: producto.id_categoria,
+      estado: producto.estado,
+      imagen_url: imageUrl,
+      tallas: producto.tallas || null,
+      colores: producto.colores || null,
+      imagenes_adicionales: imagenesAdicionalesUrls || null,
+    }
+
+    let { error: updateError } = await supabase
       .from("productos")
-      .update({
+      .update(updatePayload)
+      .eq("id_producto", producto.id_producto)
+
+    let missingColumnsWarning = false
+
+    if (updateError && updateError.code === "PGRST204") {
+      // Reintentar sin las columnas extendidas
+      const fallbackPayload = {
         nombre: producto.nombre,
         descripcion: producto.descripcion,
         precio: producto.precio,
@@ -143,15 +250,41 @@ export default function AdminProductosPage() {
         id_categoria: producto.id_categoria,
         estado: producto.estado,
         imagen_url: imageUrl,
-      })
-      .eq("id_producto", producto.id_producto)
+      }
+      const { error: fallbackError } = await supabase
+        .from("productos")
+        .update(fallbackPayload)
+        .eq("id_producto", producto.id_producto)
+
+      if (fallbackError) {
+        setModalTitle("Error al actualizar producto")
+        setModalMessage(fallbackError.message || "No se pudieron guardar los cambios.")
+        setModalVariant("error")
+        setModalOpen(true)
+        return
+      }
+      missingColumnsWarning = true
+    } else if (updateError) {
+      setModalTitle("Error al actualizar producto")
+      setModalMessage(updateError.message || "No se pudieron guardar los cambios.")
+      setModalVariant("error")
+      setModalOpen(true)
+      return
+    }
 
     setEditando(null)
     setImagenEditando(null)
     void fetchProductos()
-    setModalTitle("Producto actualizado")
-    setModalMessage("Los cambios se guardaron correctamente.")
-    setModalVariant("info")
+
+    if (missingColumnsWarning) {
+      setModalTitle("Producto actualizado (Con Advertencia)")
+      setModalMessage("Los cambios se guardaron con éxito, pero tu base de datos no cuenta con las columnas 'tallas', 'colores' o 'imagenes_adicionales'. Agrégalas en Supabase para poder usarlas.")
+      setModalVariant("info")
+    } else {
+      setModalTitle("Producto actualizado")
+      setModalMessage("Los cambios se guardaron correctamente.")
+      setModalVariant("info")
+    }
     setModalOpen(true)
   }
 
@@ -191,10 +324,17 @@ export default function AdminProductosPage() {
         p.id_producto === producto.id_producto ? { ...p, estado: estadoNuevo } : p
       )
     )
-    await supabase
+    const { error } = await supabase
       .from("productos")
       .update({ estado: estadoNuevo })
       .eq("id_producto", producto.id_producto)
+    
+    if (error) {
+      setModalTitle("Error al actualizar estado")
+      setModalMessage(error.message || "No se pudo cambiar el estado del producto.")
+      setModalVariant("error")
+      setModalOpen(true)
+    }
     void fetchProductos()
   }
 
@@ -309,6 +449,28 @@ export default function AdminProductosPage() {
             className="text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-purple-600 file:px-3 file:py-2 file:text-white"
             onChange={(e) => setImagen(e.target.files?.[0] ?? null)}
           />
+          <input
+            className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500 lg:col-span-2"
+            placeholder="Tallas (ej: XS, S, M, L, XL)"
+            value={tallas}
+            onChange={(e) => setTallas(e.target.value)}
+          />
+          <input
+            className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500 lg:col-span-2"
+            placeholder="Colores (ej: Negro, Blanco, Rojo)"
+            value={colores}
+            onChange={(e) => setColores(e.target.value)}
+          />
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            className="text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-purple-600 file:px-3 file:py-2 file:text-white lg:col-span-2"
+            onChange={(e) => setImagenesAdicionales(Array.from(e.target.files ?? []))}
+          />
+          {imagenesAdicionales.length > 0 && (
+            <p className="text-xs text-purple-300 lg:col-span-3">{imagenesAdicionales.length} imagen(es) seleccionada(s)</p>
+          )}
         </div>
         <button
           type="button"
@@ -442,6 +604,34 @@ export default function AdminProductosPage() {
                           <option value="activo">Disponible</option>
                           <option value="inactivo">No disponible</option>
                         </select>
+                        <input
+                          className="rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white sm:col-span-2"
+                          placeholder="Tallas (ej: XS, S, M, L, XL)"
+                          value={producto.tallas || ""}
+                          onChange={(e) =>
+                            setProductos((prev) =>
+                              prev.map((p) =>
+                                p.id_producto === producto.id_producto
+                                  ? { ...p, tallas: e.target.value }
+                                  : p
+                              )
+                            )
+                          }
+                        />
+                        <input
+                          className="rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white sm:col-span-2"
+                          placeholder="Colores (ej: Negro, Blanco, Rojo)"
+                          value={producto.colores || ""}
+                          onChange={(e) =>
+                            setProductos((prev) =>
+                              prev.map((p) =>
+                                p.id_producto === producto.id_producto
+                                  ? { ...p, colores: e.target.value }
+                                  : p
+                              )
+                            )
+                          }
+                        />
                         <input
                           type="file"
                           accept="image/*"

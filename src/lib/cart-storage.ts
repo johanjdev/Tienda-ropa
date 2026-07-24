@@ -4,6 +4,8 @@ export type CartItem = {
   precio: number
   imagen_url: string | null
   cantidad: number
+  talla?: string | null
+  color?: string | null
 }
 
 export const CART_CHANGED_EVENT = "cart:changed"
@@ -48,19 +50,27 @@ export function mergeGuestCartIntoUser(userId: string) {
   const guest = loadCart(null)
   if (guest.length === 0) return
   const userCart = loadCart(userId)
-  const byId = new Map<number, CartItem>()
-  for (const it of userCart) byId.set(it.id_producto, { ...it })
+  
+  const byKey = new Map<string, CartItem>()
+  for (const it of userCart) {
+    const key = `${it.id_producto}_${it.talla || ""}_${it.color || ""}`
+    byKey.set(key, { ...it })
+  }
+  
   for (const it of guest) {
-    const prev = byId.get(it.id_producto)
+    const key = `${it.id_producto}_${it.talla || ""}_${it.color || ""}`
+    const prev = byKey.get(key)
     if (prev) {
-      byId.set(it.id_producto, {
+      byKey.set(key, {
         ...prev,
         cantidad: prev.cantidad + it.cantidad,
       })
     } else {
-      byId.set(it.id_producto, { ...it })
+      byKey.set(key, { ...it })
     }
   }
-  saveCart(userId, [...byId.values()])
+  
+  saveCart(userId, [...byKey.values()])
   localStorage.removeItem(GUEST_KEY)
 }
+

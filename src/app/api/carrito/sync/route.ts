@@ -5,6 +5,8 @@ import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
 type CartItem = {
   id_producto: number
   cantidad: number
+  talla?: string | null
+  color?: string | null
 }
 
 type Body = {
@@ -76,18 +78,46 @@ export async function POST(request: Request) {
 
   if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 400 })
 
-  const cleanItems = items
+  const cleanItemsWithAttributes = items
     .map((item) => ({
       id_carrito: idCarrito,
       id_producto: Number(item.id_producto),
       cantidad: Number(item.cantidad),
+      talla: item.talla || null,
+      color: item.color || null,
     }))
     .filter((item) => item.id_producto > 0 && item.cantidad > 0)
 
-  if (cleanItems.length > 0) {
-    const { error: insertError } = await supabase.from("carrito_productos").insert(cleanItems)
-    if (insertError) return NextResponse.json({ error: insertError.message }, { status: 400 })
+  if (cleanItemsWithAttributes.length > 0) {
+    // Intentar insertar con talla y color
+    const { error: insertError } = await supabase
+      .from("carrito_productos")
+      .insert(cleanItemsWithAttributes)
+
+    if (insertError) {
+      // Si falla porque las columnas 'talla' o 'color' no existen (PGRST204),
+      // reintentar el insert básico sin esos campos
+      const isMissingColumns = 
+        insertError.code === "PGRST204" || 
+        insertError.message.includes("talla") || 
+        insertError.message.includes("color")
+
+      if (isMissingColumns) {
+        const cleanItemsBasic = cleanItemsWithAttributes.map(({ id_carrito, id_producto, cantidad }) => ({
+          id_carrito,
+          id_producto,
+          cantidad,
+        }))
+        const { error: retryError } = await supabase
+          .from("carrito_productos")
+          .insert(cleanItemsBasic)
+        if (retryError) return NextResponse.json({ error: retryError.message }, { status: 400 })
+      } else {
+        return NextResponse.json({ error: insertError.message }, { status: 400 })
+      }
+    }
   }
 
   return NextResponse.json({ ok: true, id_carrito: idCarrito })
 }
+
