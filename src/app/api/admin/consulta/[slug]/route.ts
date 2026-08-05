@@ -13,7 +13,7 @@ const SLUG_TO_TABLE: Record<string, string> = {
   "tipo-documento": "tipo_documento",
 }
 
-export async function GET(
+export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {

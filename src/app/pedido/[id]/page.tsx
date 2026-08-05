@@ -104,6 +104,7 @@ export default function PedidoPage() {
         data: { session },
       } = await supabase.auth.getSession()
       const res = await fetch(`/api/pedidos/${id}`, {
+        method: "POST",
         cache: "no-store", // nunca usar caché; siempre pedir datos frescos
         headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       })

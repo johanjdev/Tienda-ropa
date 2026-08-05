@@ -102,7 +102,7 @@ async function enviarActualizacionPedido(input: {
  *
  * Respuesta JSON: { pedidos, productoMasPedido, productoMenosPedido }
  */
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   // Verificar que el solicitante tenga rol administrador o editor
   const admin = await requireAdminOrEditor(request)
   if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status })

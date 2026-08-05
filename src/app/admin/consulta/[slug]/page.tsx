@@ -37,6 +37,7 @@ export default function AdminConsultaPage() {
       data: { session },
     } = await supabase.auth.getSession()
     const res = await fetch(`/api/admin/consulta/${slug}`, {
+      method: "POST",
       cache: "no-store",
       headers: session?.access_token
         ? { Authorization: `Bearer ${session.access_token}` }

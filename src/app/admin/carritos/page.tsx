@@ -33,6 +33,7 @@ export default function AdminCarritosPage() {
       } = await supabase.auth.getSession()
 
       const res = await fetch("/api/admin/carritos", {
+        method: "POST",
         cache: "no-store",
         headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       })

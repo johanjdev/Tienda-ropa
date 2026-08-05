@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin-auth"
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   const admin = await requireAdmin(request)
   if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status })
 

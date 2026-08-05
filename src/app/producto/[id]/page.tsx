@@ -57,7 +57,7 @@ export default function ProductoPage() {
     const run = async () => {
       setLoading(true)
       setError(null)
-      const res = await fetch(`/api/productos/${id}`, { cache: "no-store" })
+      const res = await fetch(`/api/productos/${id}`, { method: "POST", cache: "no-store" })
       const body = (await res.json()) as { data?: ProductoDetalleRaw; error?: string }
       if (cancelled) return
       if (!res.ok || !body.data) {

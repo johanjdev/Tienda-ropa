@@ -4,35 +4,45 @@ import { requireAdmin } from "@/lib/admin-auth"
 import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
 import { normalizeIntValue } from "@/lib/number-fields"
 
-export async function GET(request: Request) {
-  const admin = await requireAdmin(request)
-  if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status })
-
-  const { url } = getSupabasePublicEnv()
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-  const tableClient = serviceKey ? createClient(url, serviceKey) : admin.supabase
-
-  const [usuarios, roles, documentos] = await Promise.all([
-    tableClient.from("usuarios").select("*").order("id_usuario", { ascending: false }),
-    tableClient.from("roles").select("*").order("id_rol", { ascending: true }),
-    tableClient.from("tipo_documento").select("*").order("id_tipo_documento", { ascending: true }),
-  ])
-
-  if (usuarios.error) return NextResponse.json({ error: usuarios.error.message }, { status: 400 })
-
-  return NextResponse.json({
-    usuarios: usuarios.data ?? [],
-    roles: roles.data ?? [],
-    tiposDocumento: documentos.data ?? [],
-    rolesError: roles.error?.message ?? null,
-    tiposDocumentoError: documentos.error?.message ?? null,
-  })
-}
-
 export async function POST(request: Request) {
   const admin = await requireAdmin(request)
   if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status })
 
+  // Leer el body de forma segura
+  let body: any = null
+  try {
+    const text = await request.text()
+    if (text) {
+      body = JSON.parse(text)
+    }
+  } catch (e) {
+    // Si no es un JSON válido o está vacío, continúa como null
+  }
+
+  // CASO 1: Listado de usuarios (Equivalente al antiguo GET)
+  if (!body || !body.email) {
+    const { url } = getSupabasePublicEnv()
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+    const tableClient = serviceKey ? createClient(url, serviceKey) : admin.supabase
+
+    const [usuarios, roles, documentos] = await Promise.all([
+      tableClient.from("usuarios").select("*").order("id_usuario", { ascending: false }),
+      tableClient.from("roles").select("*").order("id_rol", { ascending: true }),
+      tableClient.from("tipo_documento").select("*").order("id_tipo_documento", { ascending: true }),
+    ])
+
+    if (usuarios.error) return NextResponse.json({ error: usuarios.error.message }, { status: 400 })
+
+    return NextResponse.json({
+      usuarios: usuarios.data ?? [],
+      roles: roles.data ?? [],
+      tiposDocumento: documentos.data ?? [],
+      rolesError: roles.error?.message ?? null,
+      tiposDocumentoError: documentos.error?.message ?? null,
+    })
+  }
+
+  // CASO 2: Creación de usuario (Equivalente al antiguo POST)
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
   if (!serviceKey) {
     return NextResponse.json(
@@ -41,7 +51,6 @@ export async function POST(request: Request) {
     )
   }
 
-  const body = await request.json()
   const email = String(body.email || "").trim()
   const password = String(body.password || "").trim()
   const nombre = String(body.nombre || "").trim()

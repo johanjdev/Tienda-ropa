@@ -23,7 +23,10 @@ export async function fetchProductosActivos(): Promise<{
   error: string | null
 }> {
   try {
-    const res = await fetch("/api/productos", { cache: "no-store" })
+    const res = await fetch("/api/productos", {
+      method: "POST",
+      cache: "no-store",
+    })
     const body = (await res.json()) as {
       data?: ProductoActivo[]
       categorias?: CategoriaCatalogo[]

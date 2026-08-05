@@ -39,7 +39,7 @@ import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
  * 5. Consulta el pedido filtrando por id_pedido AND id_usuario (doble seguridad).
  * 6. Retorna el pedido o un error 404 si no se encuentra.
  */
-export async function GET(
+export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {

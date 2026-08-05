@@ -13,6 +13,8 @@ interface FiltrosModalProps {
   precioMax: number
   onPrecioChange: (precio: number) => void
   resultados: number
+  precioMinReal?: number
+  precioMaxReal?: number
 }
 
 export default function FiltrosModal({
@@ -26,15 +28,17 @@ export default function FiltrosModal({
   precioMax,
   onPrecioChange,
   resultados,
+  precioMinReal = 10000,
+  precioMaxReal = 1000000,
 }: FiltrosModalProps) {
   if (!open) return null
 
-  const hasActiveFilters = search || idCategoriaFiltro !== null || precioMax < 1000000
+  const hasActiveFilters = search || idCategoriaFiltro !== null || precioMax < precioMaxReal
 
   const clearAll = () => {
     onSearchChange("")
     onCategoriaChange(null)
-    onPrecioChange(1000000)
+    onPrecioChange(precioMaxReal)
   }
 
   return (
@@ -141,19 +145,19 @@ export default function FiltrosModal({
           </p>
           <div className="bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs text-zinc-500">{formatCOP(10000)}</span>
-              <span className="text-xs text-zinc-500">{formatCOP(1000000)}</span>
+              <span className="text-xs text-zinc-500">{formatCOP(precioMinReal)}</span>
+              <span className="text-xs text-zinc-500">{formatCOP(precioMaxReal)}</span>
             </div>
             <input
               type="range"
-              min="10000"
-              max="1000000"
-              step="10000"
+              min={precioMinReal}
+              max={precioMaxReal}
+              step="5000"
               value={precioMax}
               onChange={(e) => onPrecioChange(Number(e.target.value))}
               className="w-full accent-purple-500 cursor-pointer h-2"
               style={{
-                background: `linear-gradient(to right, #7c3aed ${((precioMax - 10000) / (1000000 - 10000)) * 100}%, rgba(255,255,255,0.1) ${((precioMax - 10000) / (1000000 - 10000)) * 100}%)`,
+                background: `linear-gradient(to right, #7c3aed ${precioMaxReal - precioMinReal > 0 ? ((precioMax - precioMinReal) / (precioMaxReal - precioMinReal)) * 100 : 100}%, rgba(255,255,255,0.1) ${precioMaxReal - precioMinReal > 0 ? ((precioMax - precioMinReal) / (precioMaxReal - precioMinReal)) * 100 : 100}%)`,
                 borderRadius: '9999px',
               }}
             />

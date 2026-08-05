@@ -25,6 +25,7 @@ export default function AdminLogsPage() {
         data: { session },
       } = await supabase.auth.getSession()
       const res = await fetch("/api/admin/consulta/logs", {
+        method: "POST",
         cache: "no-store",
         headers: session?.access_token
           ? { Authorization: `Bearer ${session.access_token}` }

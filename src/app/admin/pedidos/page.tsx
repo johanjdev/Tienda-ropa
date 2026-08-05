@@ -48,6 +48,7 @@ export default function AdminPedidosPage() {
       } = await supabase.auth.getSession()
 
       const res = await fetch("/api/admin/pedidos", {
+        method: "POST",
         cache: "no-store",
         headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       })

@@ -77,6 +77,7 @@ export default function AdminUsuariosPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const res = await fetch("/api/admin/usuarios", {
+      method: "POST",
       cache: "no-store",
       headers: await authHeaders(),
     })

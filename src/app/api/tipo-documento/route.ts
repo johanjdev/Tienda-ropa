@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
 
-export async function GET() {
+export async function POST() {
   const { url, anonKey, configured } = getSupabasePublicEnv()
   if (!configured) {
     return NextResponse.json({ error: "Supabase no esta configurado." }, { status: 503 })

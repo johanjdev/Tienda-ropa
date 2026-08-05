@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Sesion no valida." }, { status: 401 })
   }
 
-  const { data: usuario, error: usuarioError } = await supabase
+  let { data: usuario, error: usuarioError } = await supabase
     .from("usuarios")
     .select("id_usuario, direccion")
     .eq("auth_id", user.id)
@@ -57,6 +57,20 @@ export async function POST(request: Request) {
 
   if (usuarioError) {
     return NextResponse.json({ error: usuarioError.message }, { status: 400 })
+  }
+
+  if (!usuario && user.email) {
+    const { data: usuarioPorEmail, error: emailError } = await supabase
+      .from("usuarios")
+      .select("id_usuario, direccion")
+      .eq("email", user.email)
+      .maybeSingle()
+      
+    if (!emailError && usuarioPorEmail) {
+      usuario = usuarioPorEmail
+      // Sincronizar auth_id
+      await supabase.from("usuarios").update({ auth_id: user.id }).eq("id_usuario", usuarioPorEmail.id_usuario)
+    }
   }
 
   if (!usuario?.id_usuario) {
@@ -133,6 +147,29 @@ export async function POST(request: Request) {
     talla: item.talla || null,
     color: item.color || null,
   }))
+
+  // Validar que todos los productos existen en la base de datos
+  const productIds = [...new Set(items.map((item) => Number(item.id_producto)))]
+  const { data: productosExistentes, error: productosCheckError } = await supabase
+    .from("productos")
+    .select("id_producto")
+    .in("id_producto", productIds)
+
+  if (productosCheckError) {
+    return NextResponse.json({ error: productosCheckError.message }, { status: 400 })
+  }
+
+  const idsExistentes = new Set((productosExistentes || []).map((p: { id_producto: number }) => p.id_producto))
+  const idsFaltantes = productIds.filter((id) => !idsExistentes.has(id))
+
+  if (idsFaltantes.length > 0) {
+    // Eliminar el pedido creado ya que no se puede completar
+    await supabase.from("pedidos").delete().eq("id_pedido", pedido.id_pedido)
+    return NextResponse.json(
+      { error: "Algunos productos del carrito ya no están disponibles. Por favor actualiza tu carrito." },
+      { status: 400 }
+    )
+  }
 
   const { error: detalleError } = await supabase.from("detalle_pedidos").insert(detallesWithAttributes)
   if (detalleError) {

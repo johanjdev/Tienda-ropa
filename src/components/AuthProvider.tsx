@@ -52,33 +52,138 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       setProfile(null)
       return
     }
-    const { data, error } = await supabase
+
+    let profileData = null
+
+    // 1. Intentar buscar por auth_id
+    const { data: dataById, error: errorById } = await supabase
       .from("usuarios")
       .select("*")
       .eq("auth_id", authUser.id)
       .maybeSingle()
 
-    if (error) {
-      console.error("Error cargando perfil:", error)
-      setProfile({
-        nombre: authUser.user_metadata?.full_name ?? null,
-        email: authUser.email ?? null,
-        telefono: null,
-        direccion: null,
-        auth_id: authUser.id,
-      })
-      return
+    if (!errorById && dataById) {
+      profileData = dataById
+    } else if (authUser.email) {
+      // 2. Si no se encontró por auth_id, intentar por email
+      const { data: dataByEmail, error: errorByEmail } = await supabase
+        .from("usuarios")
+        .select("*")
+        .eq("email", authUser.email)
+        .maybeSingle()
+
+      if (!errorByEmail && dataByEmail) {
+        // Encontrado por email pero sin auth_id, lo asociamos
+        const { data: updated, error: updateError } = await supabase
+          .from("usuarios")
+          .update({ auth_id: authUser.id })
+          .eq("id_usuario", dataByEmail.id_usuario)
+          .select("*")
+          .maybeSingle()
+
+        if (!updateError && updated) {
+          profileData = updated
+        } else {
+          profileData = dataByEmail
+        }
+      }
     }
 
-    if (data) setProfile(data as unknown as UsuarioPerfil)
-    else
-      setProfile({
-        nombre: authUser.user_metadata?.full_name ?? null,
-        email: authUser.email ?? null,
-        telefono: null,
-        direccion: null,
-        auth_id: authUser.id,
-      })
+    if (profileData) {
+      // Si el registro de usuario existe pero tiene campos nulos que están en la metadata de Auth,
+      // los sincronizamos automáticamente en la base de datos de forma autocurativa.
+      const meta = authUser.user_metadata || {}
+      const updates: Record<string, any> = {}
+
+      if (profileData.nombre === null && meta.full_name) updates.nombre = meta.full_name
+      if (profileData.telefono === null && meta.telefono != null) updates.telefono = Number(meta.telefono)
+      if (profileData.direccion === null && meta.direccion) updates.direccion = meta.direccion
+      if (profileData.id_tipo_documento === null && meta.id_tipo_documento != null) updates.id_tipo_documento = Number(meta.id_tipo_documento)
+      if (profileData.documento_numero === null && meta.documento_numero != null) updates.documento_numero = Number(meta.documento_numero)
+
+      // Adicional: si el perfil de usuarios no tiene dirección, intentamos recuperarla de su último pedido
+      if (profileData.direccion === null && profileData.id_usuario) {
+        try {
+          const { data: ultimoPedido } = await supabase
+            .from("pedidos")
+            .select("direccion_envio")
+            .eq("id_usuario", profileData.id_usuario)
+            .order("id_pedido", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          
+          if (ultimoPedido && ultimoPedido.direccion_envio) {
+            updates.direccion = ultimoPedido.direccion_envio
+          }
+        } catch (e) {
+          console.error("No se pudo cargar la dirección del último pedido:", e)
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        try {
+          const { data: updated, error: updateError } = await supabase
+            .from("usuarios")
+            .update(updates)
+            .eq("id_usuario", profileData.id_usuario)
+            .select("*")
+            .maybeSingle()
+
+          if (!updateError && updated) {
+            setProfile(updated as unknown as UsuarioPerfil)
+            return
+          }
+        } catch (e) {
+          console.error("Error al auto-actualizar campos faltantes de usuario:", e)
+        }
+      }
+
+      setProfile(profileData as unknown as UsuarioPerfil)
+    } else {
+      // Intentar auto-crear la fila de usuario con los datos de metadata si no existe
+      try {
+        const nuevoUsuario = {
+          nombre: authUser.user_metadata?.full_name ?? null,
+          email: authUser.email ?? null,
+          telefono: authUser.user_metadata?.telefono != null ? Number(authUser.user_metadata.telefono) : null,
+          direccion: authUser.user_metadata?.direccion ?? null,
+          auth_id: authUser.id,
+          id_rol: 1,
+          id_tipo_documento: authUser.user_metadata?.id_tipo_documento != null ? Number(authUser.user_metadata.id_tipo_documento) : null,
+          documento_numero: authUser.user_metadata?.documento_numero != null ? Number(authUser.user_metadata.documento_numero) : null,
+        }
+
+        const { data: created, error: createError } = await supabase
+          .from("usuarios")
+          .insert([nuevoUsuario])
+          .select("*")
+          .maybeSingle()
+
+        if (!createError && created) {
+          setProfile(created as unknown as UsuarioPerfil)
+        } else {
+          console.error("No se pudo auto-crear perfil en BD:", createError)
+          setProfile({
+            nombre: authUser.user_metadata?.full_name ?? null,
+            email: authUser.email ?? null,
+            telefono: authUser.user_metadata?.telefono != null ? Number(authUser.user_metadata.telefono) : null,
+            direccion: authUser.user_metadata?.direccion ?? null,
+            auth_id: authUser.id,
+            id_tipo_documento: authUser.user_metadata?.id_tipo_documento != null ? Number(authUser.user_metadata.id_tipo_documento) : null,
+            documento_numero: authUser.user_metadata?.documento_numero != null ? Number(authUser.user_metadata.documento_numero) : null,
+          })
+        }
+      } catch (e) {
+        console.error("Fallo autocreación perfil:", e)
+        setProfile({
+          nombre: authUser.user_metadata?.full_name ?? null,
+          email: authUser.email ?? null,
+          telefono: authUser.user_metadata?.telefono != null ? Number(authUser.user_metadata.telefono) : null,
+          direccion: authUser.user_metadata?.direccion ?? null,
+          auth_id: authUser.id,
+        })
+      }
+    }
   }, [])
 
   const refreshProfile = useCallback(async () => {

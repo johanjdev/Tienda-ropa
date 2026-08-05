@@ -30,6 +30,8 @@ export default function Catalogo() {
   const [search, setSearch] = useState("")
   /** null = ver todas las categorías */
   const [idCategoriaFiltro, setIdCategoriaFiltro] = useState<number | null>(null)
+  const [precioMinReal, setPrecioMinReal] = useState(10000)
+  const [precioMaxReal, setPrecioMaxReal] = useState(1000000)
   const [precioMax, setPrecioMax] = useState(1000000)
   const [activeTab, setActiveTab] = useState<"categoria" | "precio">("categoria")
   const [filtrosOpen, setFiltrosOpen] = useState(false)
@@ -48,6 +50,14 @@ export default function Catalogo() {
 
       if (data.length) {
         setProductos(data as Producto[])
+        const precios = data.map((p) => Number(p.precio)).filter((p) => p > 0)
+        if (precios.length) {
+          const min = Math.min(...precios)
+          const max = Math.max(...precios)
+          setPrecioMinReal(min)
+          setPrecioMaxReal(max)
+          setPrecioMax(max)
+        }
       } else if (!error) {
         setProductos([])
       }
@@ -150,6 +160,8 @@ export default function Catalogo() {
         precioMax={precioMax}
         onPrecioChange={setPrecioMax}
         resultados={filtered.length}
+        precioMinReal={precioMinReal}
+        precioMaxReal={precioMaxReal}
       />
 
       <div className="min-h-screen bg-[#0a0a0a] text-white px-4 md:px-8 py-10">
@@ -276,19 +288,19 @@ export default function Catalogo() {
               </p>
               <div className="bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs text-zinc-500">{formatCOP(10000)}</span>
-                  <span className="text-xs text-zinc-500">{formatCOP(1000000)}</span>
+                  <span className="text-xs text-zinc-500">{formatCOP(precioMinReal)}</span>
+                  <span className="text-xs text-zinc-500">{formatCOP(precioMaxReal)}</span>
                 </div>
                 <input
                   type="range"
-                  min="10000"
-                  max="1000000"
-                  step="10000"
+                  min={precioMinReal}
+                  max={precioMaxReal}
+                  step="5000"
                   value={precioMax}
                   onChange={(e) => setPrecioMax(Number(e.target.value))}
                   className="w-full accent-purple-500 cursor-pointer h-2"
                   style={{
-                    background: `linear-gradient(to right, #7c3aed ${((precioMax - 10000) / (1000000 - 10000)) * 100}%, rgba(255,255,255,0.1) ${((precioMax - 10000) / (1000000 - 10000)) * 100}%)`,
+                    background: `linear-gradient(to right, #7c3aed ${precioMaxReal - precioMinReal > 0 ? ((precioMax - precioMinReal) / (precioMaxReal - precioMinReal)) * 100 : 100}%, rgba(255,255,255,0.1) ${precioMaxReal - precioMinReal > 0 ? ((precioMax - precioMinReal) / (precioMaxReal - precioMinReal)) * 100 : 100}%)`,
                     borderRadius: '9999px',
                   }}
                 />
@@ -301,13 +313,13 @@ export default function Catalogo() {
             </div>
 
             {/* BOTÓN LIMPIAR FILTROS */}
-            {(search || idCategoriaFiltro !== null || precioMax < 1000000) && (
+            {(search || idCategoriaFiltro !== null || precioMax < precioMaxReal) && (
               <button
                 type="button"
                 onClick={() => {
                   setSearch("")
                   setIdCategoriaFiltro(null)
-                  setPrecioMax(1000000)
+                  setPrecioMax(precioMaxReal)
                 }}
                 className="mt-5 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-zinc-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2"
               >

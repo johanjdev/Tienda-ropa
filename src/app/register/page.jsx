@@ -37,6 +37,7 @@ export default function Register() {
     const loadTipos = async () => {
       try {
         const res = await fetch("/api/tipo-documento", {
+          method: "POST",
           cache: "no-store",
         })
 
@@ -102,6 +103,8 @@ export default function Register() {
               ? Number(idTipoDocumento)
               : null,
             documento_numero: parsedDocumentoNumero,
+            telefono: parsedTelefono,
+            direccion: direccion,
           },
         },
       })

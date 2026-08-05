@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
 
 /** Lista productos activos leyendo Supabase en el servidor (evita bundle cliente desactualizado con .env). */
-export async function GET() {
+export async function POST() {
   const { url, anonKey, configured } = getSupabasePublicEnv()
 
   if (!configured) {
