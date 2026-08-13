@@ -196,7 +196,7 @@ export default function HomePage() {
         ─────────────────────────────────────────────────────────── */}
         <section className="hero flex min-h-64vh w-full items-start justify-center h-[500px] mb-[330px] max-sm:h-[300px] max-sm:mb-[160px] max-md:mb-[220px]">
           <div className="w-full text-center">
-            <h1 className="urban mx-auto max-w-[1200px] text-white">ARQUETIPO</h1>
+            <h1 className="urban mx-auto max-w-[1200px] text-white"></h1>
           </div>
         </section>
 

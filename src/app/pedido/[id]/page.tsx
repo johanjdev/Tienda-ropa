@@ -40,11 +40,7 @@ type Detalle = {
   productos?: { nombre: string | null; imagen_url: string | null } | null
 }
 
-/**
- * Tipo que representa un pedido completo con todos sus campos.
- * Los campos numero_guia y transportadora son opcionales porque
- * el admin los agrega después de crear el pedido.
- */
+
 type Pedido = {
   id_pedido: number
   direccion_envio: string | null

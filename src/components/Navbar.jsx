@@ -51,7 +51,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 w-full bg-black/80 backdrop-blur-xl px-4 sm:px-8 py-4 sm:py-5 shadow-black/25 shadow-lg">
+      <nav className="sticky top-0 z-50 w-full bg-black/80 backdrop-blur-xl px-4 sm:px-8 py-4 sm:py-5 shadow-black/10 shadow-lg">
         <div className="mx-auto flex max-w-[1600px] items-center gap-4">
           <div className="flex items-center gap-3">
             <button
