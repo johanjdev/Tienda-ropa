@@ -50,12 +50,15 @@ export default function Register() {
 
         if (!res.ok) {
           throw new Error(
-            body.error || "No se pudieron cargar los tipos de documento."
+            body.error ||
+              "No se pudieron cargar los tipos de documento."
           )
         }
 
         if (!cancelled) {
-          const rows = Array.isArray(body.data) ? body.data : []
+          const rows = Array.isArray(body.data)
+            ? body.data
+            : []
 
           setTiposDocumento(rows)
 
@@ -66,13 +69,17 @@ export default function Register() {
           )
         }
       } catch (error) {
-        console.error("Error cargando tipos de documento:", error)
+        console.error(
+          "Error cargando tipos de documento:",
+          error
+        )
 
         if (!cancelled) {
           setTiposDocumento([])
 
           setTiposDocumentoError(
-            error.message || "No se pudieron cargar los tipos de documento."
+            error?.message ||
+              "No se pudieron cargar los tipos de documento."
           )
         }
       }
@@ -86,24 +93,52 @@ export default function Register() {
   }, [])
 
   // ============================================================
-  // SABER QUÉ TIPO DE DOCUMENTO ESTÁ SELECCIONADO
+  // NORMALIZAR TEXTO
+  // Sirve para reconocer "Cédula" como "cedula"
+  // y "Tarjeta de Identidad" como "tarjeta de identidad".
   // ============================================================
 
-  const tipoDocumentoSeleccionado = tiposDocumento.find(
-    (tipo) =>
-      String(tipo.id_tipo_documento) === String(idTipoDocumento)
-  )
+  const normalizarTexto = (texto) => {
+    return texto
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+  }
+
+  // ============================================================
+  // TIPO DE DOCUMENTO SELECCIONADO
+  // ============================================================
+
+  const tipoDocumentoSeleccionado =
+    tiposDocumento.find(
+      (tipo) =>
+        String(tipo.id_tipo_documento) ===
+        String(idTipoDocumento)
+    )
 
   const descripcionTipoDocumento =
-    tipoDocumentoSeleccionado?.descripcion?.toLowerCase() || ""
+    normalizarTexto(
+      tipoDocumentoSeleccionado?.descripcion || ""
+    )
 
-  const esCedula = descripcionTipoDocumento.includes("cedula")
+  // Cédula
+  const esCedula =
+    descripcionTipoDocumento.includes("cedula")
 
+  // Tarjeta de identidad / TI
+  const esTI =
+    descripcionTipoDocumento === "ti" ||
+    descripcionTipoDocumento.includes(
+      "tarjeta de identidad"
+    )
+
+  // Pasaporte
   const esPasaporte =
     descripcionTipoDocumento.includes("pasaporte")
 
   // ============================================================
-  // CAMBIO DEL TIPO DE DOCUMENTO
+  // CAMBIO DE TIPO DE DOCUMENTO
   // ============================================================
 
   const handleTipoDocumentoChange = (e) => {
@@ -111,10 +146,126 @@ export default function Register() {
 
     setIdTipoDocumento(nuevoTipo)
 
-    // Limpiamos el número anterior cuando cambia el tipo.
-    // Así evitamos que, por ejemplo, un valor de pasaporte
-    // quede cuando el usuario cambia a cédula.
+    // Cuando cambia el tipo, limpiamos el documento anterior.
+    // Ejemplo:
+    //
+    // Cédula -> 12345678
+    // Cambia a Pasaporte
+    // -> se limpia el campo
+    //
     setDocumentoNumero("")
+  }
+
+  // ============================================================
+  // VALIDAR NOMBRE
+  // ============================================================
+
+  const validarNombre = (valor) => {
+    const nombreLimpio = valor.trim()
+
+    if (!nombreLimpio) {
+      return "El nombre completo es obligatorio."
+    }
+
+    if (nombreLimpio.length < 3) {
+      return "El nombre debe tener al menos 3 caracteres."
+    }
+
+    if (nombreLimpio.length > 80) {
+      return "El nombre no puede superar los 80 caracteres."
+    }
+
+    // Solo letras, espacios, apóstrofes y guiones.
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/.test(nombreLimpio)) {
+      return "El nombre solamente puede contener letras y espacios."
+    }
+
+    // Evitar nombres formados por una sola letra repetida.
+    const sinEspacios = nombreLimpio
+      .replace(/\s/g, "")
+      .toLowerCase()
+
+    if (
+      sinEspacios.length >= 6 &&
+      /^([a-záéíóúñü])\1+$/.test(sinEspacios)
+    ) {
+      return "Ingresa un nombre válido."
+    }
+
+    return null
+  }
+
+  // ============================================================
+  // VALIDAR EMAIL
+  // ============================================================
+
+  const validarEmail = (valor) => {
+    const emailLimpio = valor.trim().toLowerCase()
+
+    if (!emailLimpio) {
+      return "El correo electrónico es obligatorio."
+    }
+
+    if (emailLimpio.length > 254) {
+      return "El correo electrónico no puede superar los 254 caracteres."
+    }
+
+    // Validación básica y razonable.
+    const emailRegex =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+    if (!emailRegex.test(emailLimpio)) {
+      return "Ingresa un correo electrónico válido."
+    }
+
+    // Evita espacios.
+    if (/\s/.test(emailLimpio)) {
+      return "El correo electrónico no puede contener espacios."
+    }
+
+    return null
+  }
+
+  // ============================================================
+  // VALIDAR CONTRASEÑA
+  // ============================================================
+
+  const validarPassword = (valor) => {
+    if (!valor) {
+      return "La contraseña es obligatoria."
+    }
+
+    // Mínimo
+    if (valor.length < 8) {
+      return "La contraseña debe tener al menos 8 caracteres."
+    }
+
+    // Máximo
+    if (valor.length > 72) {
+      return "La contraseña no puede superar los 72 caracteres."
+    }
+
+    // Mayúscula
+    if (!/[A-Z]/.test(valor)) {
+      return "La contraseña debe contener al menos una letra mayúscula."
+    }
+
+    // Minúscula
+    if (!/[a-z]/.test(valor)) {
+      return "La contraseña debe contener al menos una letra minúscula."
+    }
+
+    // Número
+    if (!/[0-9]/.test(valor)) {
+      return "La contraseña debe contener al menos un número."
+    }
+
+    // Carácter especial
+    if (!/[^A-Za-z0-9]/.test(valor)) {
+      return "La contraseña debe contener al menos un carácter especial."
+    }
+
+    return null
   }
 
   // ============================================================
@@ -122,27 +273,28 @@ export default function Register() {
   // ============================================================
 
   const validarTelefono = (valor) => {
-    // Si el teléfono está vacío, lo dejamos pasar porque
-    // tu formulario original no lo tenía como required.
-    if (!valor.trim()) {
+    const telefonoLimpio = valor.trim()
+
+    if (!telefonoLimpio) {
       return null
     }
 
     // Exactamente 10 números
-    if (!/^\d{10}$/.test(valor)) {
+    if (!/^\d{10}$/.test(telefonoLimpio)) {
       return "El teléfono debe tener exactamente 10 dígitos."
     }
 
-    // Celular colombiano: debe comenzar por 3
-    if (!/^3\d{9}$/.test(valor)) {
+    // Colombia: los celulares normalmente empiezan por 3.
+    if (!/^3\d{9}$/.test(telefonoLimpio)) {
       return "El teléfono debe tener 10 dígitos y comenzar por 3."
     }
 
-    // Evita cosas como:
+    // Evita:
     // 1111111111
     // 2222222222
-    // 9999999999
-    if (/^(\d)\1{9}$/.test(valor)) {
+    // 3333333333
+    // etc.
+    if (/^(\d)\1{9}$/.test(telefonoLimpio)) {
       return "Ingresa un número de teléfono válido."
     }
 
@@ -154,15 +306,17 @@ export default function Register() {
   // ============================================================
 
   const validarDocumento = (valor) => {
-    const documento = valor.trim().toUpperCase()
+    const documento = valor
+      .trim()
+      .toUpperCase()
 
     if (!documento) {
       return "El número de documento es obligatorio."
     }
 
-    // ----------------------------------------------------------
+    // ==========================================================
     // CÉDULA
-    // ----------------------------------------------------------
+    // ==========================================================
 
     if (esCedula) {
       // Solo números
@@ -175,7 +329,7 @@ export default function Register() {
         return "La cédula debe tener entre 6 y 10 dígitos."
       }
 
-      // Evita:
+      // Evitar:
       // 00000000
       // 11111111
       // 22222222
@@ -187,17 +341,39 @@ export default function Register() {
       return null
     }
 
-    // ----------------------------------------------------------
+    // ==========================================================
+    // TARJETA DE IDENTIDAD
+    // ==========================================================
+
+    if (esTI) {
+      // Solo números
+      if (!/^\d+$/.test(documento)) {
+        return "La tarjeta de identidad solamente puede contener números."
+      }
+
+      // Entre 6 y 10 dígitos
+      if (!/^\d{6,10}$/.test(documento)) {
+        return "La tarjeta de identidad debe tener entre 6 y 10 dígitos."
+      }
+
+      if (/^(\d)\1+$/.test(documento)) {
+        return "Ingresa un número de tarjeta de identidad válido."
+      }
+
+      return null
+    }
+
+    // ==========================================================
     // PASAPORTE
-    // ----------------------------------------------------------
+    // ==========================================================
 
     if (esPasaporte) {
-      // Letras y números únicamente
+      // Letras y números únicamente.
       if (!/^[A-Z0-9]+$/i.test(documento)) {
         return "El pasaporte solamente puede contener letras y números."
       }
 
-      // Entre 6 y 15 caracteres
+      // Entre 6 y 15 caracteres.
       if (!/^[A-Z0-9]{6,15}$/i.test(documento)) {
         return "El pasaporte debe tener entre 6 y 15 caracteres."
       }
@@ -205,11 +381,70 @@ export default function Register() {
       return null
     }
 
-    // ----------------------------------------------------------
-    // SI NO SE PUDO DETERMINAR EL TIPO
-    // ----------------------------------------------------------
+    // ==========================================================
+    // OTRO TIPO
+    // ==========================================================
 
     return "Selecciona un tipo de documento válido."
+  }
+
+  // ============================================================
+  // VALIDAR DIRECCIÓN
+  // ============================================================
+
+  const validarDireccion = (valor) => {
+    const direccionLimpia = valor.trim()
+
+    if (!direccionLimpia) {
+      return null
+    }
+
+    if (direccionLimpia.length < 8) {
+      return "Ingresa una dirección más completa."
+    }
+
+    if (direccionLimpia.length > 150) {
+      return "La dirección no puede superar los 150 caracteres."
+    }
+
+    // Evita cadenas como:
+    // aaaaaaaa
+    // 111111111
+    // .........
+    if (
+      /^(.)(\1){6,}$/i.test(
+        direccionLimpia.replace(/\s/g, "")
+      )
+    ) {
+      return "Ingresa una dirección válida."
+    }
+
+    // Debe contener al menos letras o números.
+    if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9]/.test(direccionLimpia)) {
+      return "Ingresa una dirección válida."
+    }
+
+    // Algunas entradas evidentemente falsas.
+    const expresionesInvalidas = [
+      "al fondo del mar",
+      "asdf",
+      "qwerty",
+      "no existe",
+      "direccion falsa",
+    ]
+
+    const direccionNormalizada =
+      normalizarTexto(direccionLimpia)
+
+    if (
+      expresionesInvalidas.some((texto) =>
+        direccionNormalizada.includes(texto)
+      )
+    ) {
+      return "Ingresa una dirección válida."
+    }
+
+    return null
   }
 
   // ============================================================
@@ -225,17 +460,54 @@ export default function Register() {
 
     try {
       // ========================================================
+      // LIMPIAR DATOS
+      // ========================================================
+
+      const nombreFinal = nombre.trim()
+
+      const emailFinal = email
+        .trim()
+        .toLowerCase()
+
+      const telefonoFinal = telefono.trim()
+
+      const direccionFinal = direccion.trim()
+
+      const documentoFinal = documentoNumero
+        .trim()
+        .toUpperCase()
+
+      // ========================================================
       // VALIDAR NOMBRE
       // ========================================================
 
-      const nombreLimpio = nombre.trim()
+      const errorNombre =
+        validarNombre(nombreFinal)
 
-      if (!nombreLimpio) {
-        throw new Error("El nombre completo es obligatorio.")
+      if (errorNombre) {
+        throw new Error(errorNombre)
       }
 
-      if (nombreLimpio.length < 3) {
-        throw new Error("El nombre debe tener al menos 3 caracteres.")
+      // ========================================================
+      // VALIDAR EMAIL
+      // ========================================================
+
+      const errorEmail =
+        validarEmail(emailFinal)
+
+      if (errorEmail) {
+        throw new Error(errorEmail)
+      }
+
+      // ========================================================
+      // VALIDAR CONTRASEÑA
+      // ========================================================
+
+      const errorPassword =
+        validarPassword(password)
+
+      if (errorPassword) {
+        throw new Error(errorPassword)
       }
 
       // ========================================================
@@ -243,22 +515,23 @@ export default function Register() {
       // ========================================================
 
       if (!idTipoDocumento) {
-        throw new Error("Selecciona un tipo de documento.")
+        throw new Error(
+          "Selecciona un tipo de documento."
+        )
       }
 
       if (!tipoDocumentoSeleccionado) {
-        throw new Error("El tipo de documento seleccionado no es válido.")
+        throw new Error(
+          "El tipo de documento seleccionado no es válido."
+        )
       }
 
       // ========================================================
       // VALIDAR DOCUMENTO
       // ========================================================
 
-      const documentoFinal = documentoNumero
-        .trim()
-        .toUpperCase()
-
-      const errorDocumento = validarDocumento(documentoFinal)
+      const errorDocumento =
+        validarDocumento(documentoFinal)
 
       if (errorDocumento) {
         throw new Error(errorDocumento)
@@ -268,9 +541,8 @@ export default function Register() {
       // VALIDAR TELÉFONO
       // ========================================================
 
-      const telefonoFinal = telefono.trim()
-
-      const errorTelefono = validarTelefono(telefonoFinal)
+      const errorTelefono =
+        validarTelefono(telefonoFinal)
 
       if (errorTelefono) {
         throw new Error(errorTelefono)
@@ -280,12 +552,11 @@ export default function Register() {
       // VALIDAR DIRECCIÓN
       // ========================================================
 
-      const direccionFinal = direccion.trim()
+      const errorDireccion =
+        validarDireccion(direccionFinal)
 
-      if (direccionFinal.length > 150) {
-        throw new Error(
-          "La dirección no puede superar los 150 caracteres."
-        )
+      if (errorDireccion) {
+        throw new Error(errorDireccion)
       }
 
       // ========================================================
@@ -294,21 +565,25 @@ export default function Register() {
 
       const { data, error: authError } =
         await supabase.auth.signUp({
-          email: email.trim(),
+          email: emailFinal,
           password,
           options: {
             data: {
-              full_name: nombreLimpio,
+              full_name: nombreFinal,
 
-              id_tipo_documento: idTipoDocumento
-                ? Number(idTipoDocumento)
-                : null,
+              id_tipo_documento:
+                idTipoDocumento
+                  ? Number(idTipoDocumento)
+                  : null,
 
-              documento_numero: documentoFinal,
+              documento_numero:
+                documentoFinal,
 
-              telefono: telefonoFinal || null,
+              telefono:
+                telefonoFinal || null,
 
-              direccion: direccionFinal || null,
+              direccion:
+                direccionFinal || null,
             },
           },
         })
@@ -327,34 +602,39 @@ export default function Register() {
       // INSERTAR EN TABLA USUARIOS
       // ========================================================
 
-      const { error: dbError } = await supabase
-        .from("usuarios")
-        .upsert(
-          {
-            nombre: nombreLimpio,
+      const { error: dbError } =
+        await supabase
+          .from("usuarios")
+          .upsert(
+            {
+              nombre: nombreFinal,
 
-            email: email.trim(),
+              email: emailFinal,
 
-            // Ahora son TEXT, por eso NO usamos
-            // normalizeIntValue().
-            telefono: telefonoFinal || null,
+              // TEXT en Supabase
+              telefono:
+                telefonoFinal || null,
 
-            direccion: direccionFinal || null,
+              direccion:
+                direccionFinal || null,
 
-            auth_id: user.id,
+              auth_id: user.id,
 
-            id_rol: 1,
+              id_rol: 1,
 
-            id_tipo_documento: idTipoDocumento
-              ? Number(idTipoDocumento)
-              : null,
+              id_tipo_documento:
+                idTipoDocumento
+                  ? Number(idTipoDocumento)
+                  : null,
 
-            documento_numero: documentoFinal,
-          },
-          {
-            onConflict: "email",
-          }
-        )
+              // TEXT en Supabase
+              documento_numero:
+                documentoFinal,
+            },
+            {
+              onConflict: "email",
+            }
+          )
 
       if (dbError) throw dbError
 
@@ -373,9 +653,10 @@ export default function Register() {
 
         setInfoOpen(true)
 
-        const searchParams = new URLSearchParams(
-          window.location.search
-        )
+        const searchParams =
+          new URLSearchParams(
+            window.location.search
+          )
 
         const redirectUrl =
           searchParams.get("redirect") || "/"
@@ -402,7 +683,8 @@ export default function Register() {
       console.error(error)
 
       setErrorMessage(
-        error.message || "Error al registrarse"
+        error?.message ||
+          "Error al registrarse"
       )
 
       setErrorOpen(true)
@@ -412,7 +694,7 @@ export default function Register() {
   }
 
   // ============================================================
-  // CLASE DE LOS CAMPOS
+  // ESTILO DE CAMPOS
   // ============================================================
 
   const fieldClass =
@@ -440,9 +722,9 @@ export default function Register() {
           className="grid gap-4 md:grid-cols-2"
         >
 
-          {/* =====================================================
+          {/* ====================================================
               NOMBRE
-              ===================================================== */}
+              ==================================================== */}
 
           <Field
             icon="ri-user-line"
@@ -456,55 +738,67 @@ export default function Register() {
               value={nombre}
               required
               onChange={(e) => {
-                const value = e.target.value
-                  .replace(
-                    /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g,
-                    ""
-                  )
-                  .slice(0, 80)
+                const value =
+                  e.target.value
+                    .replace(
+                      /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g,
+                      ""
+                    )
+                    .slice(0, 80)
 
                 setNombre(value)
               }}
             />
           </Field>
 
-          {/* =====================================================
+          {/* ====================================================
               EMAIL
-              ===================================================== */}
+              ==================================================== */}
 
           <Field icon="ri-mail-line">
             <input
               className={fieldClass}
               placeholder="Email"
               type="email"
+              maxLength={254}
+              autoComplete="email"
               value={email}
               required
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
+              onChange={(e) => {
+                const value =
+                  e.target.value.slice(0, 254)
+
+                setEmail(value)
+              }}
             />
           </Field>
 
-          {/* =====================================================
+          {/* ====================================================
               PASSWORD
-              ===================================================== */}
+              ==================================================== */}
 
           <Field icon="ri-lock-line">
             <input
               className={fieldClass}
               type="password"
               placeholder="Contrasena"
+              minLength={8}
+              maxLength={72}
+              autoComplete="new-password"
               value={password}
               required
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
+              onChange={(e) => {
+                const value =
+                  e.target.value.slice(0, 72)
+
+                setPassword(value)
+              }}
             />
           </Field>
 
-          {/* =====================================================
+          {/* ====================================================
               TIPO DOCUMENTO
-              ===================================================== */}
+              ==================================================== */}
 
           <Field icon="ri-id-card-line">
 
@@ -513,7 +807,9 @@ export default function Register() {
               value={idTipoDocumento}
               required
               disabled={!tiposDocumento.length}
-              onChange={handleTipoDocumentoChange}
+              onChange={
+                handleTipoDocumentoChange
+              }
             >
 
               <option
@@ -523,15 +819,21 @@ export default function Register() {
                 Tipo de documento
               </option>
 
-              {tiposDocumento.map((tipo) => (
-                <option
-                  key={tipo.id_tipo_documento}
-                  value={tipo.id_tipo_documento}
-                  className="bg-zinc-950"
-                >
-                  {tipo.descripcion}
-                </option>
-              ))}
+              {tiposDocumento.map(
+                (tipo) => (
+                  <option
+                    key={
+                      tipo.id_tipo_documento
+                    }
+                    value={
+                      tipo.id_tipo_documento
+                    }
+                    className="bg-zinc-950"
+                  >
+                    {tipo.descripcion}
+                  </option>
+                )
+              )}
 
             </select>
 
@@ -543,9 +845,9 @@ export default function Register() {
             </p>
           )}
 
-          {/* =====================================================
-              NUMERO DE DOCUMENTO
-              ===================================================== */}
+          {/* ====================================================
+              NUMERO DOCUMENTO
+              ==================================================== */}
 
           <Field icon="ri-hashtag">
 
@@ -556,49 +858,53 @@ export default function Register() {
                   ? "Numero de pasaporte"
                   : esCedula
                     ? "Numero de cedula"
-                    : "Numero de documento"
+                    : esTI
+                      ? "Numero de TI"
+                      : "Numero de documento"
               }
               type="text"
               value={documentoNumero}
               required
-              maxLength={esPasaporte ? 15 : 10}
+              disabled={!idTipoDocumento}
+              maxLength={
+                esPasaporte ? 15 : 10
+              }
               autoCapitalize="characters"
               inputMode={
-                esCedula
+                esCedula || esTI
                   ? "numeric"
                   : "text"
               }
-              disabled={!idTipoDocumento}
               onChange={(e) => {
 
-                let value = e.target.value
+                let value =
+                  e.target.value
 
-                // ==================================================
-                // CÉDULA
+                // ------------------------------------------------
+                // CÉDULA / TI
                 // Solo números
-                // ==================================================
+                // ------------------------------------------------
 
-                if (esCedula) {
+                if (esCedula || esTI) {
                   value = value
                     .replace(/\D/g, "")
                     .slice(0, 10)
                 }
 
-                // ==================================================
+                // ------------------------------------------------
                 // PASAPORTE
                 // Letras + números
-                // ==================================================
+                // ------------------------------------------------
 
                 else if (esPasaporte) {
                   value = value
-                    .replace(/[^a-zA-Z0-9]/g, "")
+                    .replace(
+                      /[^a-zA-Z0-9]/g,
+                      ""
+                    )
                     .slice(0, 15)
                     .toUpperCase()
                 }
-
-                // ==================================================
-                // SI NO HAY TIPO SELECCIONADO
-                // ==================================================
 
                 else {
                   value = ""
@@ -610,9 +916,9 @@ export default function Register() {
 
           </Field>
 
-          {/* =====================================================
+          {/* ====================================================
               TELEFONO
-              ===================================================== */}
+              ==================================================== */}
 
           <Field icon="ri-phone-line">
 
@@ -622,12 +928,14 @@ export default function Register() {
               type="text"
               inputMode="numeric"
               maxLength={10}
+              autoComplete="tel"
               value={telefono}
               onChange={(e) => {
 
-                const value = e.target.value
-                  .replace(/\D/g, "")
-                  .slice(0, 10)
+                const value =
+                  e.target.value
+                    .replace(/\D/g, "")
+                    .slice(0, 10)
 
                 setTelefono(value)
               }}
@@ -635,9 +943,9 @@ export default function Register() {
 
           </Field>
 
-          {/* =====================================================
+          {/* ====================================================
               DIRECCION
-              ===================================================== */}
+              ==================================================== */}
 
           <Field icon="ri-map-pin-line">
 
@@ -646,11 +954,13 @@ export default function Register() {
               placeholder="Direccion"
               type="text"
               maxLength={150}
+              autoComplete="street-address"
               value={direccion}
               onChange={(e) => {
 
-                const value = e.target.value
-                  .slice(0, 150)
+                const value =
+                  e.target.value
+                    .slice(0, 150)
 
                 setDireccion(value)
               }}
@@ -658,9 +968,9 @@ export default function Register() {
 
           </Field>
 
-          {/* =====================================================
+          {/* ====================================================
               BOTON
-              ===================================================== */}
+              ==================================================== */}
 
           <button
             type="submit"
@@ -680,9 +990,9 @@ export default function Register() {
 
         </form>
 
-        {/* =======================================================
+        {/* ======================================================
             LOGIN
-            ======================================================= */}
+            ====================================================== */}
 
         <p className="mt-5 text-center text-sm text-zinc-400">
 
@@ -699,13 +1009,15 @@ export default function Register() {
 
       </div>
 
-      {/* =========================================================
+      {/* ========================================================
           MODAL INFO
-          ========================================================= */}
+          ======================================================== */}
 
       <Modal
         open={infoOpen}
-        onClose={() => setInfoOpen(false)}
+        onClose={() =>
+          setInfoOpen(false)
+        }
         title={infoTitle}
         variant={
           infoVariant === "success"
@@ -716,13 +1028,15 @@ export default function Register() {
         <p>{infoMessage}</p>
       </Modal>
 
-      {/* =========================================================
+      {/* ========================================================
           MODAL ERROR
-          ========================================================= */}
+          ======================================================== */}
 
       <Modal
         open={errorOpen}
-        onClose={() => setErrorOpen(false)}
+        onClose={() =>
+          setErrorOpen(false)
+        }
         title="No se pudo registrar"
         variant="error"
       >
