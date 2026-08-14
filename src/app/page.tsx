@@ -193,7 +193,12 @@ export default function HomePage() {
             SECCIÓN 1: IMAGEN DE FONDO (HERO) - ESTÁTICA
             Solo la imagen de fondo, sin contenido superpuesto
             ═══════════════════════════════════════════════════════════ */}
-        <section className="hero w-full min-h-screen max-sm:min-h-[400px] max-md:min-h-[600px]">
+        <section className="hero">
+          <img
+            src="/imagenes/fondo/arquetipofondo.png"
+            alt="ARQUETIPO"
+            className="hero-image"
+          />
         </section>
 
 

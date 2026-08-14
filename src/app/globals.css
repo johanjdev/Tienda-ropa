@@ -19,16 +19,31 @@
   @import "remixicon/fonts/remixicon.css";
 
   /*background*/
-  body {
-    background-image:url('/imagenes/fondo/arquetipofondo.png');
-    background-size: cover;      /* Escala la imagen para que cubra toda la pantalla sin deformarse */
-    background-position: center; /* Centra la imagen para que no quede enfocada solo en una esquina */
-    background-repeat: no-repeat;/* Evita que la imagen se repita */
-    background-attachment: fixed;/* Mantiene el fondo fijo mientras haces scroll */
-    min-height: 100vh;
-    color: var(--foreground);
-    font-family: Arial, Helvetica, sans-serif;
-  }
+body {
+  background: #000;
+  min-height: 100vh;
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ============================================================
+   HERO PRINCIPAL
+   Imagen independiente y completamente responsiva
+   ============================================================ */
+
+.hero {
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.hero-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
 
 
 /* ── 4. Clases de utilidad global ──────────────────────────── */
