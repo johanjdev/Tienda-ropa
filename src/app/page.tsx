@@ -189,22 +189,18 @@ export default function HomePage() {
           transition: 'opacity 0.6s ease',
         }}
       >
-        {/* ── Sección Hero ──────────────────────────────────────────
-            Muestra el nombre ARQUETIPO a gran escala sobre la imagen
-            de fondo definida en .hero dentro de globals.css.
-            Las clases max-sm y max-md ajustan la altura en móviles y tablets.
-        ─────────────────────────────────────────────────────────── */}
-        <section className="hero flex min-h-64vh w-full items-start justify-center h-[500px] mb-[330px] max-sm:h-[300px] max-sm:mb-[160px] max-md:mb-[220px]">
-          <div className="w-full text-center">
-            <h1 className="urban mx-auto max-w-[1200px] text-white"></h1>
-          </div>
+        {/* ═══════════════════════════════════════════════════════════
+            SECCIÓN 1: IMAGEN DE FONDO (HERO) - ESTÁTICA
+            Solo la imagen de fondo, sin contenido superpuesto
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="hero w-full min-h-screen max-sm:min-h-[400px] max-md:min-h-[600px]">
         </section>
 
-        {/* ── Sección de Productos ──────────────────────────────────
-            Muestra dos grillas de 4 tarjetas cada una.
-            Mientras carga muestra placeholders animados (skeleton).
-        ─────────────────────────────────────────────────────────── */}
-        <section className="productos-section">
+
+        {/* ═══════════════════════════════════════════════════════════
+            SECCIÓN 2: PRODUCTOS MÁS VENDIDOS
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="productos-section w-full bg-black py-20">
           <div className="max-w-[1600px] mx-auto px-4 pb-10 sm:px-6 lg:px-8">
 
             {/* Título de la sección */}
