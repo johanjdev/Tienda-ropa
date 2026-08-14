@@ -783,13 +783,13 @@ export default function Register() {
               type="password"
               placeholder="Contrasena"
               minLength={8}
-              maxLength={72}
+              maxLength={15}
               autoComplete="new-password"
               value={password}
               required
               onChange={(e) => {
                 const value =
-                  e.target.value.slice(0, 72)
+                  e.target.value.slice(0, 15)
 
                 setPassword(value)
               }}
