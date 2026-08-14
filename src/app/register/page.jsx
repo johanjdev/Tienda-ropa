@@ -241,8 +241,8 @@ export default function Register() {
     }
 
     // Máximo
-    if (valor.length > 72) {
-      return "La contraseña no puede superar los 72 caracteres."
+    if (valor.length > 15) {
+      return "La contraseña no puede superar los 15 caracteres."
     }
 
     // Mayúscula
