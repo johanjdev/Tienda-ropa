@@ -15,7 +15,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { fetchProductosActivos, type ProductoActivo } from "@/lib/fetch-productos"
 import { formatCOP } from "@/lib/format"
 import dynamic from "next/dynamic"
@@ -39,6 +39,7 @@ export default function HomePage() {
 
   /** ID del producto sobre el que está el cursor (para el efecto hover de imagen) */
   const [hoveredId, setHoveredId] = useState<number | null>(null)
+  const otrosCarruselRef = useRef<HTMLDivElement>(null)
 
   /** Controla si el loader sigue montado en el DOM */
   const [showLoader, setShowLoader] = useState(() => {
@@ -172,6 +173,12 @@ export default function HomePage() {
   const row1 = featuredProductos.slice(0, 4) // primera fila
   const row2 = featuredProductos.slice(4, 8) // segunda fila
 
+  /** Productos que no pertenecen a la selección de más vendidos. */
+  const otrosProductos = useMemo(() => {
+    const featuredIds = new Set(featuredProductos.map((producto) => producto.id_producto))
+    return productos.filter((producto) => !featuredIds.has(producto.id_producto))
+  }, [productos, featuredProductos])
+
   return (
     <>
       {/* Pantalla de carga: se desmonta automáticamente al terminar */}
@@ -189,22 +196,23 @@ export default function HomePage() {
           transition: 'opacity 0.6s ease',
         }}
       >
-        {/* ── Sección Hero ──────────────────────────────────────────
-            Muestra el nombre ARQUETIPO a gran escala sobre la imagen
-            de fondo definida en .hero dentro de globals.css.
-            Las clases max-sm y max-md ajustan la altura en móviles y tablets.
-        ─────────────────────────────────────────────────────────── */}
-        <section className="hero flex min-h-64vh w-full items-start justify-center h-[500px] mb-[330px] max-sm:h-[300px] max-sm:mb-[160px] max-md:mb-[220px]">
-          <div className="w-full text-center">
-            <h1 className="urban mx-auto max-w-[1200px] text-white">ARQUETIPO</h1>
-          </div>
+        {/* ═══════════════════════════════════════════════════════════
+            SECCIÓN 1: IMAGEN DE FONDO (HERO) - ESTÁTICA
+            Solo la imagen de fondo, sin contenido superpuesto
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="hero">
+          <img
+            src="/imagenes/fondo/arquetipofondo.png"
+            alt="ARQUETIPO"
+            className="hero-image"
+          />
         </section>
 
-        {/* ── Sección de Productos ──────────────────────────────────
-            Muestra dos grillas de 4 tarjetas cada una.
-            Mientras carga muestra placeholders animados (skeleton).
-        ─────────────────────────────────────────────────────────── */}
-        <section className="productos-section">
+
+        {/* ═══════════════════════════════════════════════════════════
+            SECCIÓN 2: PRODUCTOS MÁS VENDIDOS
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="productos-section w-full bg-black py-20">
           <div className="max-w-[1600px] mx-auto px-4 pb-10 sm:px-6 lg:px-8">
 
             {/* Título de la sección */}
@@ -280,6 +288,45 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* ═══════════════════════════════════════════════════════════
+            SECCIÓN 3: MÁS DE LA COLECCIÓN
+            Mosaico editorial inspirado en la referencia: tamaños variados
+            para dar protagonismo a los productos restantes.
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="w-full bg-black px-4 pb-20 pt-8 sm:px-6 lg:px-8 lg:pb-28">
+          <div className="mx-auto max-w-[1600px]">
+            <div className="mb-10 flex flex-col gap-4 border-t border-white/15 pt-7 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-purple-300">Sigue explorando</p>
+                <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-5xl">MÁS DE LA COLECCIÓN</h2>
+              </div>
+              <Link href="/user" className="text-sm font-semibold text-white/70 transition hover:text-purple-300">
+                Ver catálogo completo →
+              </Link>
+            </div>
+
+            {loading ? (
+              <div className="flex gap-5 overflow-hidden">
+                {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-[420px] min-w-[78%] animate-pulse bg-zinc-900 sm:min-w-[42%] lg:min-w-[28%]" />)}
+              </div>
+            ) : otrosProductos.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/15 p-10 text-center text-sm text-white/50">
+                Pronto encontrarás más piezas de la colección.
+              </div>
+            ) : (
+              <div className="relative">
+                <div ref={otrosCarruselRef} className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {otrosProductos.map((producto) => <CarouselProductCard key={producto.id_producto} producto={producto} />)}
+                </div>
+                <div className="mt-5 flex justify-end gap-3">
+                  <button type="button" aria-label="Productos anteriores" onClick={() => otrosCarruselRef.current?.scrollBy({ left: -otrosCarruselRef.current.clientWidth * 0.8, behavior: "smooth" })} className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 text-xl text-white transition hover:border-purple-400 hover:text-purple-300">←</button>
+                  <button type="button" aria-label="Más productos" onClick={() => otrosCarruselRef.current?.scrollBy({ left: otrosCarruselRef.current.clientWidth * 0.8, behavior: "smooth" })} className="flex h-11 w-11 items-center justify-center rounded-full bg-[#6b2ad4] text-xl text-white transition hover:bg-[#7c3ddd]">→</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* ── Degradado decorativo al final de la página ──
             Crea un efecto de "resplandor" morado que se funde con el fondo negro.
         ─────────────────────────────────────────────────────────── */}
@@ -289,6 +336,31 @@ export default function HomePage() {
         </div>
       </div>
     </>
+  )
+}
+
+function CarouselProductCard({ producto }: { producto: ProductoActivo }) {
+  return (
+    <Link
+      href={`/producto/${producto.id_producto}`}
+      className="group relative h-[420px] min-w-[78%] snap-start overflow-hidden bg-zinc-900 sm:min-w-[42%] lg:min-w-[28%]"
+    >
+      <img
+        src={producto.imagen_url || "/imagenes/principal/camisa1Ark.png"}
+        alt={producto.nombre}
+        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/5 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">Arquetipo</p>
+            <h3 className="mt-1 text-lg font-bold leading-tight sm:text-xl">{producto.nombre}</h3>
+          </div>
+          <span className="shrink-0 text-sm font-semibold text-white">{formatCOP(producto.precio)}</span>
+        </div>
+      </div>
+    </Link>
   )
 }
 

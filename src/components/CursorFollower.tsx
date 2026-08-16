@@ -4,15 +4,26 @@ import { useEffect, useState } from "react";
 
 export default function CursorFollower() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia("(pointer: fine)");
+    const updateEnabled = () => setEnabled(mediaQuery.matches);
+    updateEnabled();
+    mediaQuery.addEventListener("change", updateEnabled);
+
     const moveCursor = (e: MouseEvent) => {
       setPosition({ x: e.clientX, y: e.clientY });
     };
 
     window.addEventListener("mousemove", moveCursor);
-    return () => window.removeEventListener("mousemove", moveCursor);
+    return () => {
+      mediaQuery.removeEventListener("change", updateEnabled);
+      window.removeEventListener("mousemove", moveCursor);
+    };
   }, []);
+
+  if (!enabled) return null;
 
   return (
     <div

@@ -18,56 +18,32 @@
   @import "tailwindcss";
   @import "remixicon/fonts/remixicon.css";
 
+  /*background*/
+body {
+  background: #000;
+  min-height: 100vh;
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
 
-/* ── 2. Tokens de tema ─────────────────────────────────────── */
-  @theme inline {
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-    --font-sans: var(--font-geist-sans);
-    --font-mono: var(--font-geist-mono);
-  }
+/* ============================================================
+   HERO PRINCIPAL
+   Imagen independiente y completamente responsiva
+   ============================================================ */
 
-/* ── 3. Fondo del body ─────────────────────────────────────── */
-/*
-  Se usa un degradado radial que va del negro absoluto en el centro
-  hacia un violeta (rgb(107, 42, 212)), luego gris claro y de vuelta
-  al negro. Esto crea el efecto de "halo" característico de la marca.
-*/
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background-gradient: radial-gradient(circle, rgba(0, 0, 0, 1) 40%, 
-        rgb(107, 42, 212) 60%, 
-        rgb(226, 226, 226) 65%, 
-        rgb(126, 126, 126) 70%, 
-        rgba(0, 0, 0, 1) 80%);
-      --foreground: #ffffff;
-      --bg-color: #000000;
-    }
-  }
+.hero {
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+}
 
-  body {
-    background-color: var(--bg-color, #000000);
-    color: var(--foreground);
-    font-family: Arial, Helvetica, sans-serif;
-    min-height: 100vh;
-    margin: 0;
-    overflow-x: hidden; /* evita scroll horizontal por animaciones */
-    position: relative;
-  }
-
-  /* Solución cross-browser (Safari iOS) para fixed background con degradados */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -1;
-    background: var(--background-gradient);
-    background-size: 100% 250%;
-    background-repeat: no-repeat;
-  }
+.hero-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
 
 
 /* ── 4. Clases de utilidad global ──────────────────────────── */
@@ -459,9 +435,4 @@ input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
-}
-
-/* Quitar spinners en Firefox */
-input[type="number"] {
-  -moz-appearance: textfield;
 }
