@@ -1,6 +1,7 @@
 "use client"
 
 import AdminMobileNav from "./AdminMobileNav"
+import AdminReadOnlyGuard from "./AdminReadOnlyGuard"
 import AdminSidebar from "./AdminSidebar"
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -11,7 +12,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       </div>
       <AdminSidebar />
       <main className="flex-1 min-h-0 overflow-x-hidden">
-        <div className="p-5 md:p-10 max-w-[1400px] mx-auto">{children}</div>
+        <div className="p-5 md:p-10 max-w-[1400px] mx-auto"><AdminReadOnlyGuard>{children}</AdminReadOnlyGuard></div>
       </main>
     </div>
   )

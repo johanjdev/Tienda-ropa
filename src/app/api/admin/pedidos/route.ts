@@ -15,7 +15,7 @@
  */
 
 import { NextResponse } from "next/server"
-import { requireAdminOrEditor } from "@/lib/admin-auth"
+import { requireAdmin, requireAdminPanelReader } from "@/lib/admin-auth"
 
 /**
  * Estados permitidos para un pedido.
@@ -104,7 +104,7 @@ async function enviarActualizacionPedido(input: {
  */
 export async function POST(request: Request) {
   // Verificar que el solicitante tenga rol administrador o editor
-  const admin = await requireAdminOrEditor(request)
+  const admin = await requireAdminPanelReader(request)
   if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status })
 
   // Consulta principal: todos los pedidos con relaciones anidadas
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
  */
 export async function PUT(request: Request) {
   // Verificar que el solicitante tenga rol administrador o editor
-  const admin = await requireAdminOrEditor(request)
+  const admin = await requireAdmin(request)
   if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status })
 
   // Parsear el cuerpo de la solicitud (retorna {} si falla el parse)

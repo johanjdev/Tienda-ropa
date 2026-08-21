@@ -161,9 +161,9 @@ export default function AdminCuponesPage() {
       <section className="rounded-2xl border border-white/10 bg-zinc-950/50 p-5 md:p-6">
         <h2 className="mb-4 text-lg font-semibold text-white">Nuevo cupon</h2>
         <div className="grid gap-3 md:grid-cols-4">
-          <input className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500" placeholder="Codigo" value={form.codigo} onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))} />
+          <input className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500" placeholder="Codigo" maxLength={50} value={form.codigo} onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))} />
           <input className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple-500" type="number" min="1" max="100" placeholder="Porcentaje de descuento (%)" value={form.porcentaje} onChange={(e) => setForm((p) => ({ ...p, porcentaje: e.target.value }))} />
-          <input className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple-500" type="number" min="1" placeholder="Uso maximo disponible" value={form.uso_maximo} onChange={(e) => setForm((p) => ({ ...p, uso_maximo: e.target.value }))} />
+          <input className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple-500" type="number" min="1" max="999999999" placeholder="Uso maximo disponible" value={form.uso_maximo} onChange={(e) => setForm((p) => ({ ...p, uso_maximo: e.target.value }))} />
           <input className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500" type="datetime-local" value={form.fecha_expiracion} onChange={(e) => setForm((p) => ({ ...p, fecha_expiracion: e.target.value }))} />
         </div>
         <button type="button" onClick={() => void crear()} className="mt-4 rounded-full bg-gradient-to-r from-[#6b2ad4] to-[#580096] px-6 py-3 text-sm font-semibold text-white">

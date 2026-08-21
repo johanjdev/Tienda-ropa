@@ -158,12 +158,14 @@ export default function AdminCategoriasPage() {
           <input
             className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500"
             placeholder="Nombre (ej. chaquetas)"
+            maxLength={80}
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
           />
           <input
             className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500 md:col-span-2"
             placeholder="Descripción"
+            maxLength={300}
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
           />
@@ -200,6 +202,7 @@ export default function AdminCategoriasPage() {
                       <div className="space-y-2 max-w-xl">
                         <input
                           className="w-full rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white"
+                          maxLength={80}
                           value={c.nombre_categoria}
                           onChange={(e) =>
                             setRows((prev) =>
@@ -213,6 +216,7 @@ export default function AdminCategoriasPage() {
                         />
                         <input
                           className="w-full rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white"
+                          maxLength={300}
                           value={c.descripcion ?? ""}
                           onChange={(e) =>
                             setRows((prev) =>

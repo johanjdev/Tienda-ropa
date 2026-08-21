@@ -9,7 +9,12 @@ export async function requireAdminOrEditor(request: Request) {
   return requireRole(request, ["administrador", "admin", "editor"])
 }
 
-export async function requireRole(request: Request, allowedRoles: string[]) {
+/** Roles that may enter the back-office, but do not necessarily modify data. */
+export async function requireAdminPanelReader(request: Request) {
+  return requireRole(request, ["administrador", "admin", "editor", "produccion", "producción"], [3])
+}
+
+export async function requireRole(request: Request, allowedRoles: string[], allowedRoleIds: number[] = []) {
   const authHeader = request.headers.get("authorization") || ""
   const { url, anonKey, configured } = getSupabasePublicEnv()
 
@@ -46,7 +51,7 @@ export async function requireRole(request: Request, allowedRoles: string[]) {
   const allowedByLegacyId =
     isLegacyAdmin && allowedRoles.some((allowed) => allowed === "admin" || allowed === "administrador")
 
-  if (!allowedRoles.includes(roleName) && !allowedByLegacyId) {
+  if (!allowedRoles.includes(roleName) && !allowedRoleIds.includes(Number(profile?.id_rol)) && !allowedByLegacyId) {
     return { error: "Permisos insuficientes.", status: 403 as const }
   }
 

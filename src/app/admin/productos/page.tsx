@@ -27,7 +27,7 @@ interface Categoria {
 
 export default function AdminProductosPage() {
   const { profile } = useAuth()
-  const isEditor = Number(profile?.id_rol) !== 2
+  const isEditor = Number(profile?.id_rol) !== 2 && Number(profile?.id_rol) !== 3
   const [productos, setProductos] = useState<Producto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [editando, setEditando] = useState<number | null>(null)
@@ -398,12 +398,14 @@ export default function AdminProductosPage() {
           <input
             className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500"
             placeholder="Nombre"
+            maxLength={120}
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
           />
           <input
             className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500 sm:col-span-2"
             placeholder="Descripción"
+            maxLength={1000}
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
           />
@@ -411,6 +413,7 @@ export default function AdminProductosPage() {
             className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500"
             type="number"
             step="0.01"
+            max="999999999"
             placeholder="Precio"
             value={precio}
             onChange={(e) => setPrecio(e.target.value)}
@@ -419,6 +422,7 @@ export default function AdminProductosPage() {
             className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500"
             type="number"
             min={0}
+            max="999999999"
             placeholder="Stock"
             value={stockNuevo}
             onChange={(e) => setStockNuevo(e.target.value)}
@@ -452,12 +456,14 @@ export default function AdminProductosPage() {
           <input
             className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500 lg:col-span-2"
             placeholder="Tallas (ej: XS, S, M, L, XL)"
+            maxLength={200}
             value={tallas}
             onChange={(e) => setTallas(e.target.value)}
           />
           <input
             className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500 lg:col-span-2"
             placeholder="Colores (ej: Negro, Blanco, Rojo)"
+            maxLength={200}
             value={colores}
             onChange={(e) => setColores(e.target.value)}
           />
@@ -489,6 +495,7 @@ export default function AdminProductosPage() {
             <input
               type="text"
               placeholder="Buscar..."
+              maxLength={120}
               className="w-full rounded-xl border border-white/10 bg-black/60 py-2.5 pl-10 pr-4 text-sm text-white outline-none focus:border-purple-500"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
@@ -516,6 +523,7 @@ export default function AdminProductosPage() {
                       <div className="grid sm:grid-cols-2 gap-3 max-w-4xl">
                         <input
                           className="rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white"
+                          maxLength={120}
                           value={producto.nombre}
                           onChange={(e) =>
                             setProductos((prev) =>
@@ -529,6 +537,7 @@ export default function AdminProductosPage() {
                         />
                         <input
                           className="rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white sm:col-span-2"
+                          maxLength={1000}
                           value={producto.descripcion}
                           onChange={(e) =>
                             setProductos((prev) =>
@@ -543,6 +552,7 @@ export default function AdminProductosPage() {
                         <input
                           type="number"
                           step="0.01"
+                          max="999999999"
                           className="rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white"
                           value={producto.precio}
                           onChange={(e) =>
@@ -557,6 +567,7 @@ export default function AdminProductosPage() {
                         />
                         <input
                           type="number"
+                          max="999999999"
                           className="rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white"
                           value={producto.stock}
                           onChange={(e) =>
@@ -607,6 +618,7 @@ export default function AdminProductosPage() {
                         <input
                           className="rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white sm:col-span-2"
                           placeholder="Tallas (ej: XS, S, M, L, XL)"
+                          maxLength={200}
                           value={producto.tallas || ""}
                           onChange={(e) =>
                             setProductos((prev) =>
@@ -621,6 +633,7 @@ export default function AdminProductosPage() {
                         <input
                           className="rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-white sm:col-span-2"
                           placeholder="Colores (ej: Negro, Blanco, Rojo)"
+                          maxLength={200}
                           value={producto.colores || ""}
                           onChange={(e) =>
                             setProductos((prev) =>

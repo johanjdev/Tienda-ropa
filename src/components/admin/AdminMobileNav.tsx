@@ -19,7 +19,7 @@ export default function AdminMobileNav() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const { profile } = useAuth()
-  const isEditor = Number(profile?.id_rol) !== 2
+  const isEditor = Number(profile?.id_rol) !== 2 && Number(profile?.id_rol) !== 3
   const visibleLinks = isEditor
     ? links.filter((item) => ["/admin/productos", "/admin/pedidos"].includes(item.href))
     : links

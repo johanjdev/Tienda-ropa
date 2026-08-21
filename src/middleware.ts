@@ -47,7 +47,11 @@ export async function middleware(request: NextRequest) {
         request.nextUrl.pathname.startsWith('/admin/productos') ||
         request.nextUrl.pathname.startsWith('/admin/pedidos'))
 
-    if (!dbUser || (!isAdmin && !editorAllowed)) {
+    // El rol 3 (producción) puede consultar todo el panel, pero las rutas de
+    // escritura siguen protegidas por las APIs y la interfaz de solo lectura.
+    const produccionAllowed = Number(dbUser?.id_rol) === 3 || roleName === 'produccion' || roleName === 'producción'
+
+    if (!dbUser || (!isAdmin && !editorAllowed && !produccionAllowed)) {
       return NextResponse.redirect(new URL('/', request.url))
     }
   }

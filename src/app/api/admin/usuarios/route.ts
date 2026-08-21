@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { requireAdmin } from "@/lib/admin-auth"
+import { requireAdmin, requireAdminPanelReader } from "@/lib/admin-auth"
 import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
 import { normalizeIntValue } from "@/lib/number-fields"
 
 export async function POST(request: Request) {
-  const admin = await requireAdmin(request)
+  const admin = await requireAdminPanelReader(request)
   if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status })
 
   // Leer el body de forma segura
@@ -43,6 +43,9 @@ export async function POST(request: Request) {
   }
 
   // CASO 2: Creación de usuario (Equivalente al antiguo POST)
+  if (admin.roleName !== "administrador" && admin.roleName !== "admin" && Number(admin.profile?.id_rol) !== 2) {
+    return NextResponse.json({ error: "Permisos insuficientes." }, { status: 403 })
+  }
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
   if (!serviceKey) {
     return NextResponse.json(
@@ -109,13 +112,28 @@ export async function PATCH(request: Request) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
   const tableClient = serviceKey ? createClient(url, serviceKey) : admin.supabase
 
+  const idRol = Number(body.id_rol)
   const { data: existing } = await tableClient
     .from("roles")
     .select("id_rol")
     .ilike("tipo_rol", tipoRol)
     .maybeSingle()
 
-  if (existing) return NextResponse.json({ error: "Ese rol ya existe." }, { status: 409 })
+  if (existing && Number(existing.id_rol) !== idRol) return NextResponse.json({ error: "Ese rol ya existe." }, { status: 409 })
+
+  if (idRol) {
+    if ([1, 2, 3].includes(idRol)) {
+      return NextResponse.json({ error: "Los roles base (usuario, administrador y producción) no se pueden renombrar." }, { status: 400 })
+    }
+    const { data, error } = await tableClient
+      .from("roles")
+      .update({ tipo_rol: tipoRol })
+      .eq("id_rol", idRol)
+      .select("*")
+      .single()
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ ok: true, rol: data })
+  }
 
   const { data, error } = await tableClient
     .from("roles")
@@ -232,6 +250,24 @@ export async function DELETE(request: Request) {
   if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status })
 
   const body = await request.json().catch(() => ({}))
+  const idRol = Number(body.id_rol)
+  if (idRol) {
+    if ([1, 2, 3].includes(idRol)) {
+      return NextResponse.json({ error: "Los roles base no se pueden eliminar." }, { status: 400 })
+    }
+    const { url } = getSupabasePublicEnv()
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+    const tableClient = serviceKey ? createClient(url, serviceKey) : admin.supabase
+    const { count, error: usageError } = await tableClient
+      .from("usuarios")
+      .select("id_usuario", { count: "exact", head: true })
+      .eq("id_rol", idRol)
+    if (usageError) return NextResponse.json({ error: usageError.message }, { status: 400 })
+    if (count) return NextResponse.json({ error: "No puedes eliminar un rol que está asignado a usuarios." }, { status: 409 })
+    const { error } = await tableClient.from("roles").delete().eq("id_rol", idRol)
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ ok: true })
+  }
   const idUsuario = Number(body.id_usuario)
   if (!idUsuario) return NextResponse.json({ error: "Id de usuario requerido." }, { status: 400 })
 

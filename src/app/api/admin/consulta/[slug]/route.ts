@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/admin-auth"
+import { requireAdminPanelReader } from "@/lib/admin-auth"
 import { createClient } from "@supabase/supabase-js"
 import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
 
@@ -22,7 +22,7 @@ export async function POST(
 
   if (!table) return NextResponse.json({ error: "Tabla no permitida." }, { status: 404 })
 
-  const admin = await requireAdmin(request)
+  const admin = await requireAdminPanelReader(request)
   if ("error" in admin) {
     return NextResponse.json({ error: admin.error }, { status: admin.status })
   }

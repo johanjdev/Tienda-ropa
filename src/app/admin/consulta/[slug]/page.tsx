@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import Modal from "@/components/Modal"
 
 const SLUG_TO_TABLE: Record<string, string> = {
   usuarios: "usuarios",
@@ -28,6 +29,10 @@ export default function AdminConsultaPage() {
   const [loading, setLoading] = useState(true)
   const [newRole, setNewRole] = useState("editor")
   const [savingRole, setSavingRole] = useState(false)
+  const [editingRoleId, setEditingRoleId] = useState<number | null>(null)
+  const [editingRoleName, setEditingRoleName] = useState("")
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalMessage, setModalMessage] = useState("")
 
   const loadRows = useCallback(async (cancelled?: () => boolean) => {
     if (!table) return
@@ -96,6 +101,23 @@ export default function AdminConsultaPage() {
     setSavingRole(false)
   }
 
+  const roleRequest = async (method: "PATCH" | "DELETE", payload: Record<string, unknown>) => {
+    setSavingRole(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch("/api/admin/usuarios", {
+      method,
+      headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+      body: JSON.stringify(payload),
+    })
+    const body = await res.json()
+    if (!res.ok) setError(body.error || "No se pudo actualizar el rol.")
+    else {
+      setEditingRoleId(null)
+      await loadRows()
+    }
+    setSavingRole(false)
+  }
+
   if (!table) {
     return (
       <div className="rounded-2xl border border-red-500/30 bg-red-950/30 p-8 text-red-200">
@@ -111,6 +133,9 @@ export default function AdminConsultaPage() {
 
   return (
     <div className="space-y-6">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Rol protegido" variant="info">
+        <p>{modalMessage}</p>
+      </Modal>
       <div>
         <p className="text-xs uppercase tracking-widest text-zinc-500">Consulta</p>
         <h1 className="text-2xl font-black text-white capitalize mt-1">{title}</h1>
@@ -132,6 +157,7 @@ export default function AdminConsultaPage() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               value={newRole}
+              maxLength={30}
               onChange={(e) => setNewRole(e.target.value)}
               placeholder="Nombre del rol, por ejemplo editor"
               className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none focus:border-purple-500"
@@ -164,6 +190,7 @@ export default function AdminConsultaPage() {
                     {c}
                   </th>
                 ))}
+                {slug === "roles" && <th className="px-3 py-3 font-medium sticky top-0 bg-zinc-950">Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -171,9 +198,29 @@ export default function AdminConsultaPage() {
                 <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02]">
                   {cols.map((c) => (
                     <td key={c} className="px-3 py-2 text-zinc-300 max-w-[260px] whitespace-normal break-words align-top" title={String(row[c] ?? "")}>
-                      {formatCell(row[c])}
+                      {slug === "roles" && c === "tipo_rol" && editingRoleId === Number(row.id_rol) ? (
+                        <input value={editingRoleName} maxLength={30} onChange={(e) => setEditingRoleName(e.target.value)} className="w-full rounded border border-white/20 bg-black px-2 py-1 text-white" />
+                      ) : formatCell(row[c])}
                     </td>
                   ))}
+                  {slug === "roles" && (
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {editingRoleId === Number(row.id_rol) ? (
+                        <>
+                          <button type="button" disabled={savingRole} onClick={() => void roleRequest("PATCH", { id_rol: Number(row.id_rol), tipo_rol: editingRoleName })} className="mr-2 rounded bg-emerald-600 px-2 py-1 text-xs text-white">Guardar</button>
+                          <button type="button" onClick={() => setEditingRoleId(null)} className="rounded border border-white/20 px-2 py-1 text-xs text-white">Cancelar</button>
+                        </>
+                      ) : (
+                        <>
+                          <button type="button" onClick={() => {
+                            if ([1, 2, 3].includes(Number(row.id_rol))) { setModalMessage("Los roles base no se pueden editar."); setModalOpen(true); return }
+                            setEditingRoleId(Number(row.id_rol)); setEditingRoleName(String(row.tipo_rol || ""))
+                          }} className="mr-2 rounded bg-amber-500 px-2 py-1 text-xs text-black">Editar</button>
+                          <button type="button" onClick={() => void roleRequest("DELETE", { id_rol: Number(row.id_rol) })} className="rounded bg-red-600 px-2 py-1 text-xs text-white">Eliminar</button>
+                        </>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

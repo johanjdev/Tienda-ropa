@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/admin-auth"
+import { requireAdminPanelReader } from "@/lib/admin-auth"
 
 export async function POST(request: Request) {
-  const admin = await requireAdmin(request)
+  const admin = await requireAdminPanelReader(request)
   if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status })
 
   const { data, error } = await admin.supabase

@@ -27,7 +27,15 @@ export default function Navbar() {
         .eq("id_rol", Number(profile.id_rol))
         .maybeSingle()
       const roleName = String(role?.tipo_rol || "").trim().toLowerCase()
-      setIsAdmin(Number(profile.id_rol) === 2 || roleName === "admin" || roleName === "administrador")
+      // Producción (rol 3) también puede entrar al panel, en modo consulta.
+      setIsAdmin(
+        Number(profile.id_rol) === 2 ||
+        Number(profile.id_rol) === 3 ||
+        roleName === "admin" ||
+        roleName === "administrador" ||
+        roleName === "produccion" ||
+        roleName === "producción"
+      )
     }
     void loadRole()
   }, [profile?.id_rol, user?.id])

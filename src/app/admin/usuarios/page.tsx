@@ -268,9 +268,11 @@ export default function AdminUsuariosPage() {
           ].map(([key, label]) => (
             <input
               key={key}
-              type={key === "password" ? "password" : key === "email" ? "email" : key === "telefono" || key === "documento_numero" ? "number" : "text"}
+              type={key === "password" ? "password" : key === "email" ? "email" : "text"}
               inputMode={key === "telefono" || key === "documento_numero" ? "numeric" : undefined}
-              min={key === "telefono" || key === "documento_numero" ? "0" : undefined}
+              maxLength={key === "nombre" ? 80 : key === "email" ? 254 : key === "password" ? 15 : key === "telefono" ? 10 : key === "direccion" ? 150 : 15}
+              minLength={key === "password" ? 8 : undefined}
+              pattern={key === "telefono" || key === "documento_numero" ? "[0-9]*" : undefined}
               value={form[key as keyof typeof form]}
               placeholder={label}
               onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
@@ -389,6 +391,7 @@ export default function AdminUsuariosPage() {
                     <>
                       <td className="min-w-[220px] px-4 py-3">
                         <input
+                          maxLength={80}
                           value={editForm.nombre}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, nombre: e.target.value }))}
                           className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white outline-none focus:border-purple-500"
@@ -398,12 +401,15 @@ export default function AdminUsuariosPage() {
                         <div className="space-y-2">
                           <input
                             type="email"
+                            maxLength={254}
                             value={editForm.email}
                             onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
                             className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white outline-none focus:border-purple-500"
                           />
                           <input
                             type="password"
+                            minLength={8}
+                            maxLength={15}
                             value={editForm.password}
                             placeholder="Nueva contrasena opcional"
                             onChange={(e) => setEditForm((prev) => ({ ...prev, password: e.target.value }))}
@@ -440,9 +446,10 @@ export default function AdminUsuariosPage() {
                       </td>
                       <td className="min-w-[180px] px-4 py-3">
                         <input
-                          type="number"
+                          type="text"
                           inputMode="numeric"
-                          min="0"
+                          maxLength={15}
+                          pattern="[0-9]*"
                           value={editForm.documento_numero}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, documento_numero: e.target.value }))}
                           className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white outline-none focus:border-purple-500"
@@ -450,9 +457,10 @@ export default function AdminUsuariosPage() {
                       </td>
                       <td className="min-w-[160px] px-4 py-3">
                         <input
-                          type="number"
+                          type="text"
                           inputMode="numeric"
-                          min="0"
+                          maxLength={10}
+                          pattern="[0-9]*"
                           value={editForm.telefono}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, telefono: e.target.value }))}
                           className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white outline-none focus:border-purple-500"
@@ -460,6 +468,7 @@ export default function AdminUsuariosPage() {
                       </td>
                       <td className="min-w-[220px] px-4 py-3">
                         <input
+                          maxLength={150}
                           value={editForm.direccion}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, direccion: e.target.value }))}
                           className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white outline-none focus:border-purple-500"

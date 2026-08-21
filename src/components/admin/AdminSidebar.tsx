@@ -48,7 +48,7 @@ function NavLink({ item }: { item: NavItem }) {
 
 export default function AdminSidebar() {
   const { profile } = useAuth()
-  const isEditor = Number(profile?.id_rol) !== 2
+  const isEditor = Number(profile?.id_rol) !== 2 && Number(profile?.id_rol) !== 3
   const visibleMainNav = isEditor
     ? mainNav.filter((item) => ["/admin/productos", "/admin/pedidos"].includes(item.href))
     : mainNav

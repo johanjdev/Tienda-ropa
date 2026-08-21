@@ -27,7 +27,7 @@ export default function AdminHomePage() {
   const { profile, user } = useAuth()
   const [stats, setStats] = useState<Stat[]>([])
   const [loading, setLoading] = useState(true)
-  const isEditor = Number(profile?.id_rol) !== 2
+  const isEditor = Number(profile?.id_rol) !== 2 && Number(profile?.id_rol) !== 3
 
   useEffect(() => {
     let cancelled = false

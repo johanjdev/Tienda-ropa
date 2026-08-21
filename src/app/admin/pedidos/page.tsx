@@ -163,12 +163,14 @@ export default function AdminPedidosPage() {
                   <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                     <input
                       value={pedido.transportadora || ""}
+                      maxLength={80}
                       onChange={(e) => setPedidos((prev) => prev.map((item) => item.id_pedido === pedido.id_pedido ? { ...item, transportadora: e.target.value } : item))}
                       placeholder="Transportadora"
                       className="rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-sm text-white outline-none focus:border-purple-500"
                     />
                     <input
                       value={pedido.numero_guia || ""}
+                      maxLength={60}
                       onChange={(e) => setPedidos((prev) => prev.map((item) => item.id_pedido === pedido.id_pedido ? { ...item, numero_guia: e.target.value } : item))}
                       placeholder="Número de guía"
                       className="rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-sm text-white outline-none focus:border-purple-500"
