@@ -12,6 +12,7 @@ export default function Register() {
   const [telefono, setTelefono] = useState("")
   const [direccion, setDireccion] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
 
   const [tiposDocumento, setTiposDocumento] = useState([])
   const [idTipoDocumento, setIdTipoDocumento] = useState("")
@@ -780,7 +781,7 @@ export default function Register() {
           <Field icon="ri-lock-line">
             <input
               className={fieldClass}
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Contrasena"
               minLength={8}
               maxLength={15}
@@ -794,6 +795,14 @@ export default function Register() {
                 setPassword(value)
               }}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="text-zinc-500 hover:text-white p-1 transition"
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            >
+              <i className={showPassword ? "ri-eye-off-line" : "ri-eye-line"} />
+            </button>
           </Field>
 
           {/* ====================================================

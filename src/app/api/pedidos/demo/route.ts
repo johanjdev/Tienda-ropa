@@ -204,6 +204,40 @@ export async function POST(request: Request) {
     }
   }
 
+  // ── Descontar stock e inactivar productos agotados ──────────────
+  // Agrupar cantidades por producto para hacer actualizaciones eficientes
+  const cantidadesPorProducto = new Map<number, number>()
+  for (const item of items) {
+    const id = Number(item.id_producto)
+    cantidadesPorProducto.set(id, (cantidadesPorProducto.get(id) ?? 0) + Number(item.cantidad))
+  }
+
+  for (const [idProducto, cantidadComprada] of cantidadesPorProducto) {
+    // Obtener el stock actual del producto
+    const { data: productoData } = await supabase
+      .from("productos")
+      .select("stock, estado")
+      .eq("id_producto", idProducto)
+      .maybeSingle()
+
+    if (productoData) {
+      const stockActual = Number(productoData.stock ?? 0)
+      const nuevoStock = Math.max(0, stockActual - cantidadComprada)
+      const updatePayload: Record<string, number | string> = { stock: nuevoStock }
+
+      // Si el stock llega a cero, inactivar automáticamente
+      if (nuevoStock === 0) {
+        updatePayload.estado = "inactivo"
+      }
+
+      await supabase
+        .from("productos")
+        .update(updatePayload)
+        .eq("id_producto", idProducto)
+    }
+  }
+  // ── Fin descuento de stock ──────────────────────────────────────
+
   await supabase.from("logs").insert([
     {
       id_usuario: usuario.id_usuario,

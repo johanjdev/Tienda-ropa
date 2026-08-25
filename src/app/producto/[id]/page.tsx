@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useAuth } from "@/components/AuthProvider"
 import { formatCOP } from "@/lib/format"
 import { loadCart, saveCart, type CartItem } from "@/lib/cart-storage"
+import Modal from "@/components/Modal"
 
 type ProductoDetalleRaw = {
   id_producto: number
@@ -51,6 +52,10 @@ export default function ProductoPage() {
 
   const [tallaError, setTallaError] = useState(false)
   const [colorError, setColorError] = useState(false)
+
+  const [stockModalOpen, setStockModalOpen] = useState(false)
+  const [stockModalMsg, setStockModalMsg] = useState("")
+  const [successModalOpen, setSuccessModalOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -127,17 +132,30 @@ export default function ProductoPage() {
     const current = loadCart(keyId)
     
     // Comparar por id, talla y color
-    const existingIndex = current.findIndex(
+    const existing = current.find(
       (c) =>
         c.id_producto === producto.id_producto &&
         (c.talla || null) === (selectedTalla || null) &&
         (c.color || null) === (selectedColor || null)
     )
 
+    const currentQty = existing ? existing.cantidad : 0
+    const stockMax = producto.stock ?? 0
+
+    if (currentQty + 1 > stockMax) {
+      setStockModalMsg(
+        `Lo sentimos, no puedes agregar más unidades de este producto. El stock disponible actual es de ${stockMax} unidades y ya tienes ${currentQty} en tu carrito.`
+      )
+      setStockModalOpen(true)
+      return
+    }
+
     let next: CartItem[]
-    if (existingIndex > -1) {
-      next = current.map((c, idx) =>
-        idx === existingIndex
+    if (existing) {
+      next = current.map((c) =>
+        c.id_producto === producto.id_producto &&
+        (c.talla || null) === (selectedTalla || null) &&
+        (c.color || null) === (selectedColor || null)
           ? { ...c, cantidad: c.cantidad + 1 }
           : c
       )
@@ -157,6 +175,7 @@ export default function ProductoPage() {
     }
     saveCart(keyId, next)
     setAdded(true)
+    setSuccessModalOpen(true)
     window.setTimeout(() => setAdded(false), 1800)
   }, [disponible, producto, user?.id, selectedTalla, selectedColor])
 
@@ -392,6 +411,47 @@ export default function ProductoPage() {
           </section>
         </div>
       </div>
+      
+      <Modal
+        open={stockModalOpen}
+        onClose={() => setStockModalOpen(false)}
+        title="Límite de stock alcanzado"
+        variant="error"
+      >
+        <p>{stockModalMsg}</p>
+      </Modal>
+
+      <Modal
+        open={successModalOpen}
+        onClose={() => setSuccessModalOpen(false)}
+        title="¡Agregado con éxito!"
+        variant="info"
+      >
+        <div className="flex flex-col items-center text-center p-4">
+          <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 mb-4 animate-bounce">
+            <i className="ri-shopping-bag-3-line text-3xl" />
+          </div>
+          <h3 className="text-lg font-bold text-white mb-1">¡Producto en tu bolsa!</h3>
+          <p className="text-sm text-zinc-400 mb-6">
+            Has agregado <strong>{producto.nombre}</strong>{selectedTalla ? ` (Talla: ${selectedTalla})` : ""}{selectedColor ? ` (Color: ${selectedColor})` : ""} a tu bolsa de compras.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => setSuccessModalOpen(false)}
+              className="flex-1 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/5 transition"
+            >
+              Seguir comprando
+            </button>
+            <Link
+              href="/cart"
+              className="flex-1 rounded-full bg-[#6b2ad4] hover:bg-[#580096] px-5 py-3 text-sm font-bold text-white text-center transition"
+            >
+              Ir al carrito
+            </Link>
+          </div>
+        </div>
+      </Modal>
     </main>
   )
 }

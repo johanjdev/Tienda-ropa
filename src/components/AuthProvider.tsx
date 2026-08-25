@@ -23,6 +23,7 @@ export type UsuarioPerfil = {
   id_rol?: number | null
   id_tipo_documento?: number | null
   documento_numero?: number | null
+  activo?: boolean
 }
 
 type AuthContextValue = {
@@ -90,6 +91,20 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     }
 
     if (profileData) {
+      if (profileData.activo === false) {
+        console.warn("Usuario inactivo detectado. Cerrando sesión.")
+        await supabase.auth.signOut({ scope: "global" })
+        localStorage.removeItem("sb-auth-token")
+        Object.keys(localStorage)
+          .filter((key) => key.startsWith("sb-") && key.includes("-auth-token"))
+          .forEach((key) => localStorage.removeItem(key))
+        setUser(null)
+        setProfile(null)
+        if (typeof window !== "undefined") {
+          window.location.href = "/login?error=inactive"
+        }
+        return
+      }
       // Si el registro de usuario existe pero tiene campos nulos que están en la metadata de Auth,
       // los sincronizamos automáticamente en la base de datos de forma autocurativa.
       const meta = authUser.user_metadata || {}

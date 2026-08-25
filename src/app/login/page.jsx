@@ -40,6 +40,9 @@ export default function LoginPage() {
   /** Si es true, el correo se guarda en localStorage para pre-cargarlo la próxima visita */
   const [remember, setRemember] = useState(false)
 
+  /** Si es true, se muestra la contraseña en texto plano */
+  const [showPassword, setShowPassword] = useState(false)
+
   /** Indica si el inicio de sesión está siendo procesado (deshabilita el botón) */
   const [loading, setLoading] = useState(false)
 
@@ -64,12 +67,20 @@ export default function LoginPage() {
   /**
    * Al montar la página, revisa localStorage para pre-cargar el correo
    * si el usuario había activado "Recordar correo" en una visita anterior.
+   * También verifica si viene un error por cuenta inactiva.
    */
   useEffect(() => {
     const remembered = localStorage.getItem("rememberEmail")
     if (remembered) {
       setEmail(remembered)
       setRemember(true)
+    }
+
+    const searchParams = new URLSearchParams(window.location.search)
+    if (searchParams.get("error") === "inactive") {
+      setModalTitle("Cuenta inactiva")
+      setModalMessage("Tu cuenta ha sido desactivada. Si crees que es un error, por favor contacta al soporte.")
+      setModalOpen(true)
     }
   }, [])
 
@@ -81,9 +92,10 @@ export default function LoginPage() {
    * Pasos:
    * 1. Autentica con supabase.auth.signInWithPassword().
    * 2. Si "Recordar correo" está activo, guarda el email en localStorage.
-   * 3. Consulta la tabla `usuarios` para obtener el id_rol del usuario.
-   * 4. Consulta la tabla `roles` para obtener el nombre del rol.
-   * 5. Redirige a /admin si es administrador, o a / si es usuario normal.
+   * 3. Consulta la tabla `usuarios` para obtener el id_rol y estado activo del usuario.
+   * 4. Si el usuario está inactivo, aborta, cierra la sesión de auth y muestra un error.
+   * 5. Consulta la tabla `roles` para obtener el nombre del rol.
+   * 6. Redirige a /admin si es administrador, o a / si es usuario normal.
    *
    * Si cualquier paso falla, muestra el error en el modal.
    */
@@ -104,14 +116,20 @@ export default function LoginPage() {
       if (remember) localStorage.setItem("rememberEmail", email)
       else localStorage.removeItem("rememberEmail")
 
-      // Obtener el rol del usuario desde la tabla `usuarios`
+      // Obtener el rol y estado activo del usuario desde la tabla `usuarios`
       const { data: usuarioDb, error: roleError } = await supabase
         .from("usuarios")
-        .select("id_rol")
+        .select("id_rol, activo")
         .eq("auth_id", data.user.id)
         .maybeSingle()
 
       if (roleError) throw roleError
+
+      // Validar si el usuario está inactivo
+      if (usuarioDb && usuarioDb.activo === false) {
+        await supabase.auth.signOut()
+        throw new Error("Esta cuenta ha sido desactivada. Por favor contacta al administrador.")
+      }
 
       // Si tiene id_rol, obtener el nombre del rol desde la tabla `roles`
       const { data: rolDb } = usuarioDb?.id_rol
@@ -222,12 +240,20 @@ export default function LoginPage() {
               <i className="ri-lock-line text-zinc-500" aria-hidden />
               <input
                 className="min-w-0 flex-1 bg-transparent p-3 text-white placeholder-zinc-600 outline-none"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Tu contrasena"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-zinc-500 hover:text-white p-2 transition"
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                <i className={showPassword ? "ri-eye-off-line" : "ri-eye-line"} />
+              </button>
             </div>
           </label>
 

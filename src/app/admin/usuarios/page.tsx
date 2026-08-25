@@ -15,6 +15,7 @@ type UsuarioRow = {
   id_rol: number | null
   id_tipo_documento?: number | null
   documento_numero?: number | null
+  activo?: boolean | null
 }
 
 type RolRow = {
@@ -201,9 +202,9 @@ export default function AdminUsuariosPage() {
   }
 
   const confirmarEliminacion = (id: number) => {
-    setConfirmTitle("Eliminar usuario")
-    setConfirmMessage("¿Seguro que deseas eliminar este usuario?")
-    setConfirmLabel("Eliminar")
+    setConfirmTitle("Inactivar usuario")
+    setConfirmMessage("¿Seguro que deseas inactivar este usuario? Perderá acceso al sistema, pero su historial se conservará.")
+    setConfirmLabel("Inactivar")
     setConfirmAction(() => async () => await eliminarUsuario(id))
     setConfirmOpen(true)
   }
@@ -221,14 +222,39 @@ export default function AdminUsuariosPage() {
     })
     const body = await res.json()
     if (res.ok) {
-      setModalTitle("Usuario eliminado")
-      setModalMessage("El usuario fue eliminado correctamente.")
+      setModalTitle("Usuario inactivado")
+      setModalMessage("El usuario fue inactivado correctamente. Su historial se conserva.")
       setModalVariant("info")
       setModalOpen(true)
       void load()
     } else {
-      setModalTitle("No se pudo eliminar")
-      setModalMessage(body.error || "Error al eliminar usuario.")
+      setModalTitle("No se pudo inactivar")
+      setModalMessage(body.error || "Error al inactivar usuario.")
+      setModalVariant("error")
+      setModalOpen(true)
+    }
+    setSaving(false)
+  }
+
+  const reactivarUsuario = async (id: number) => {
+    setSaving(true)
+    setMessage(null)
+    const headers = { "Content-Type": "application/json", ...(await authHeaders()) }
+    const res = await fetch("/api/admin/usuarios", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ id_usuario: id, activo: true }),
+    })
+    const body = await res.json()
+    if (res.ok) {
+      setModalTitle("Usuario reactivado")
+      setModalMessage("El usuario fue reactivado y ya puede iniciar sesión.")
+      setModalVariant("info")
+      setModalOpen(true)
+      void load()
+    } else {
+      setModalTitle("No se pudo reactivar")
+      setModalMessage(body.error || "Error al reactivar usuario.")
       setModalVariant("error")
       setModalOpen(true)
     }
@@ -507,6 +533,17 @@ export default function AdminUsuariosPage() {
                       <td className="px-4 py-3 text-zinc-400">{usuario.telefono != null ? usuario.telefono : "-"}</td>
                       <td className="max-w-[260px] break-words px-4 py-3 text-zinc-400">{usuario.direccion || "-"}</td>
                       <td className="px-4 py-3">
+                        {usuario.activo === false ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-red-500/25 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-300">
+                            <i className="ri-close-circle-line" /> Inactivo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                            <i className="ri-checkbox-circle-line" /> Activo
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <button
                             type="button"
@@ -515,13 +552,25 @@ export default function AdminUsuariosPage() {
                           >
                             Editar
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => confirmarEliminacion(usuario.id_usuario)}
-                            className="rounded-lg bg-red-600/90 px-3 py-2 text-xs text-white"
-                          >
-                            Eliminar
-                          </button>
+                          {usuario.activo === false ? (
+                            <button
+                              type="button"
+                              disabled={saving}
+                              onClick={() => void reactivarUsuario(usuario.id_usuario)}
+                              className="rounded-lg border border-emerald-500/40 px-3 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50"
+                            >
+                              Reactivar
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={saving}
+                              onClick={() => confirmarEliminacion(usuario.id_usuario)}
+                              className="rounded-lg bg-red-600/80 px-3 py-2 text-xs text-white hover:bg-red-600 disabled:opacity-50"
+                            >
+                              Inactivar
+                            </button>
+                          )}
                         </div>
                       </td>
                     </>

@@ -80,21 +80,37 @@ function Footer() {
 
               <li>
                 <a
-                  href="https://instagram.com"
+                  href="https://instagram.com/arquetipo"
                   target="_blank"
-                  className="hover:text-white transition"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition flex items-center gap-1.5"
                 >
+                  <i className="ri-instagram-line" />
                   Instagram
                 </a>
               </li>
 
               <li>
                 <a
-                  href="https://tiktok.com"
+                  href="https://tiktok.com/@arquetipo"
                   target="_blank"
-                  className="hover:text-white transition"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition flex items-center gap-1.5"
                 >
+                  <i className="ri-tiktok-line" />
                   TikTok
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="https://wa.me/573001234567"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition flex items-center gap-1.5"
+                >
+                  <i className="ri-whatsapp-line" />
+                  WhatsApp
                 </a>
               </li>
 

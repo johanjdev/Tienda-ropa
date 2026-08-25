@@ -19,9 +19,9 @@ import { requireAdmin, requireAdminPanelReader } from "@/lib/admin-auth"
 
 /**
  * Estados permitidos para un pedido.
- * Solo se puede actualizar a uno de estos tres valores.
+ * Solo se puede actualizar a uno de estos cinco valores.
  */
-const ESTADOS_PERMITIDOS = ["pendiente", "enviado", "entregado"]
+const ESTADOS_PERMITIDOS = ["pendiente", "enviado", "entregado", "novedad", "devuelto"]
 
 /**
  * Tipo auxiliar para los detalles de un pedido usados en el correo.
@@ -61,6 +61,7 @@ async function enviarActualizacionPedido(input: {
   estado: string
   numeroGuia?: string | null
   transportadora?: string | null
+  novedadDetalle?: string | null
   detalles: DetalleCorreo[]
   total: number
 }) {
@@ -76,8 +77,13 @@ async function enviarActualizacionPedido(input: {
     ? `<p><strong>Transportadora:</strong> ${input.transportadora || "Por confirmar"}<br /><strong>Número de guía:</strong> ${input.numeroGuia}</p>`
     : ""
 
+  // Bloque HTML con el detalle de novedad
+  const novedad = input.novedadDetalle
+    ? `<p style="color: #ea580c; background-color: #fff7ed; padding: 10px; border: 1px solid #ffedd5; border-radius: 8px;"><strong>Detalle de la novedad:</strong> ${input.novedadDetalle}</p>`
+    : ""
+
   // HTML completo del correo
-  const html = `<main><h1>Actualización de tu pedido #${input.idPedido}</h1><p>Hola ${input.nombre || ""}, tu pedido ahora está <strong>${input.estado}</strong>.</p>${envio}<h2>Productos</h2><ul>${items}</ul><p><strong>Total: $${Number(input.total).toLocaleString("es-CO")}</strong></p><p>Gracias por comprar con nosotros.</p></main>`
+  const html = `<main><h1>Actualización de tu pedido #${input.idPedido}</h1><p>Hola ${input.nombre || ""}, tu pedido ahora está <strong>${input.estado}</strong>.</p>${novedad}${envio}<h2>Productos</h2><ul>${items}</ul><p><strong>Total: $${Number(input.total).toLocaleString("es-CO")}</strong></p><p>Gracias por comprar con nosotros.</p></main>`
 
   // Llamada a la API de Resend
   const response = await fetch("https://api.resend.com/emails", {
@@ -119,6 +125,7 @@ export async function POST(request: Request) {
       fecha_pedido,
       numero_guia,
       transportadora,
+      novedad_detalle,
       usuarios(nombre, email, telefono),
       detalle_pedidos(
         id_detalle,
@@ -197,6 +204,7 @@ export async function PUT(request: Request) {
   // Si el campo viene en el body se convierte a string; si no viene se deja null
   const numero_guia = body.numero_guia !== undefined ? String(body.numero_guia).trim() : null
   const transportadora = body.transportadora !== undefined ? String(body.transportadora).trim() : null
+  const novedad_detalle = body.novedad_detalle !== undefined ? String(body.novedad_detalle).trim() : null
 
   // Validaciones básicas
   if (!idPedido) return NextResponse.json({ error: "Pedido invalido." }, { status: 400 })
@@ -204,13 +212,14 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Estado no permitido." }, { status: 400 })
   }
 
-  // Actualizar estado, número de guía y transportadora en la base de datos
+  // Actualizar estado, número de guía, transportadora y detalles de novedad en la base de datos
   const { error } = await admin.supabase
     .from("pedidos")
     .update({
       estado,
       numero_guia: numero_guia || null,
-      transportadora: transportadora || null
+      transportadora: transportadora || null,
+      novedad_detalle: novedad_detalle || null
     })
     .eq("id_pedido", idPedido)
 
@@ -220,6 +229,7 @@ export async function PUT(request: Request) {
   let logAccion = `Estado de pedido #${idPedido} actualizado a ${estado}`
   if (numero_guia) logAccion += `, guía: ${numero_guia}`
   if (transportadora) logAccion += `, transportadora: ${transportadora}`
+  if (novedad_detalle) logAccion += `, novedad: ${novedad_detalle}`
 
   // Registrar la acción en la tabla de auditoría `logs`
   await admin.supabase.from("logs").insert([
@@ -239,6 +249,7 @@ export async function PUT(request: Request) {
       total,
       numero_guia,
       transportadora,
+      novedad_detalle,
       usuarios(nombre, email),
       detalle_pedidos(
         cantidad,
@@ -282,6 +293,7 @@ export async function PUT(request: Request) {
         estado: pedido.estado || "pendiente",
         numeroGuia: pedido.numero_guia,
         transportadora: pedido.transportadora,
+        novedadDetalle: pedido.novedad_detalle,
         detalles: detallesMapeados,
         total: Number(pedido.total || 0),
       })

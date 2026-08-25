@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider"
 import { supabase } from "@/lib/supabase"
 import { loadCart, saveCart, type CartItem } from "@/lib/cart-storage"
 import { formatCOP } from "@/lib/format"
+import Modal from "@/components/Modal"
 
 export default function CartPage() {
   const router = useRouter()
@@ -18,6 +19,9 @@ export default function CartPage() {
   const [couponMessage, setCouponMessage] = useState<string | null>(null)
   const [paying, setPaying] = useState(false)
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null)
+  const [stocks, setStocks] = useState<Record<number, number>>({})
+  const [stockModalOpen, setStockModalOpen] = useState(false)
+  const [stockModalMsg, setStockModalMsg] = useState("")
 
   const storageKey = useMemo(() => user?.id ?? null, [user?.id])
 
@@ -104,9 +108,27 @@ export default function CartPage() {
     [user]
   )
 
+  const loadStocks = useCallback(async (cartItems: CartItem[]) => {
+    if (cartItems.length === 0) return
+    const ids = [...new Set(cartItems.map((it) => it.id_producto))]
+    const { data, error } = await supabase
+      .from("productos")
+      .select("id_producto, stock")
+      .in("id_producto", ids)
+    if (!error && data) {
+      const map: Record<number, number> = {}
+      for (const p of data) {
+        map[p.id_producto] = p.stock ?? 0
+      }
+      setStocks(map)
+    }
+  }, [])
+
   const refresh = useCallback(() => {
-    setItems(loadCart(storageKey))
-  }, [storageKey])
+    const loaded = loadCart(storageKey)
+    setItems(loaded)
+    void loadStocks(loaded)
+  }, [storageKey, loadStocks])
 
   useEffect(() => {
     if (authLoading) return
@@ -119,6 +141,26 @@ export default function CartPage() {
   }, [authLoading, storageKey, syncCart, user])
 
   const updateQty = (id: number, talla: string | null | undefined, color: string | null | undefined, delta: number) => {
+    const item = items.find(
+      (it) =>
+        it.id_producto === id &&
+        (it.talla || null) === (talla || null) &&
+        (it.color || null) === (color || null)
+    )
+    if (!item) return
+
+    if (delta > 0) {
+      const currentQty = item.cantidad
+      const maxStock = stocks[id] ?? 9999
+      if (currentQty + delta > maxStock) {
+        setStockModalMsg(
+          `Lo sentimos, no puedes agregar más unidades de este producto. El stock disponible actual es de ${maxStock} unidades y ya tienes ${currentQty} en tu carrito.`
+        )
+        setStockModalOpen(true)
+        return
+      }
+    }
+
     const next = items
       .map((it) =>
         it.id_producto === id &&
@@ -746,6 +788,15 @@ export default function CartPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={stockModalOpen}
+        onClose={() => setStockModalOpen(false)}
+        title="Límite de stock alcanzado"
+        variant="error"
+      >
+        <p>{stockModalMsg}</p>
+      </Modal>
     </div>
   )
 }

@@ -10,6 +10,17 @@ export default function ContactoPage() {
           <p className="mt-6 max-w-md text-white/75">Escríbenos sobre tu compra, tallas, envíos o cualquier duda. Te responderemos lo más pronto posible.</p>
           <div className="mt-10 space-y-5 text-sm">
             <p><span className="block text-purple-200">Horario de atención</span>Lunes a sábado · 9:00 a. m. – 6:00 p. m.</p>
+            <p><span className="block text-purple-200">WhatsApp de Soporte</span>
+              <a
+                href="https://wa.me/573001234567?text=%C2%A1Hola%21+Tengo+una+duda+sobre+la+tienda."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-black hover:bg-[#20ba5a] transition duration-300"
+              >
+                <i className="ri-whatsapp-line text-sm" />
+                Escríbenos a WhatsApp
+              </a>
+            </p>
             <p><span className="block text-purple-200">Seguimiento de pedidos</span>Consulta el estado y la guía desde <Link href="/cuenta" className="font-semibold underline">Mi cuenta</Link>.</p>
           </div>
         </div>

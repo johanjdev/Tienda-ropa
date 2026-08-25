@@ -49,6 +49,7 @@ type Pedido = {
   fecha_pedido?: string | null
   numero_guia?: string | null      // asignado por el admin cuando se envía el paquete
   transportadora?: string | null   // empresa de transporte (ej: Coordinadora, Servientrega)
+  novedad_detalle?: string | null  // detalles o novedades del transporte
   detalle_pedidos?: Detalle[]
 }
 
@@ -179,7 +180,20 @@ export default function PedidoPage() {
                 <div>
                   {/* Estado del pedido */}
                   <p className="text-xs uppercase tracking-widest text-zinc-500">Estado</p>
-                  <p className="mt-1 font-bold text-emerald-200">{pedido.estado || "pedido_creado"}</p>
+                  <p className={`mt-1 font-bold ${
+                    pedido.estado === "entregado" ? "text-emerald-200" :
+                    pedido.estado === "enviado"   ? "text-blue-200"    :
+                    pedido.estado === "novedad"   ? "text-orange-200"  :
+                    pedido.estado === "devuelto"  ? "text-red-200"     :
+                    "text-amber-200"
+                  }`}>
+                    {pedido.estado === "pendiente" && "Pendiente de preparación"}
+                    {pedido.estado === "enviado"   && "Enviado"}
+                    {pedido.estado === "entregado" && "Entregado"}
+                    {pedido.estado === "novedad"   && "Novedad en transporte"}
+                    {pedido.estado === "devuelto"  && "Devuelto"}
+                    {!pedido.estado               && "Pedido creado"}
+                  </p>
 
                   {/* Información de envío: solo visible si el admin asignó número de guía */}
                   {pedido.numero_guia && (
@@ -187,6 +201,16 @@ export default function PedidoPage() {
                       <p className="mt-4 text-xs uppercase tracking-widest text-zinc-500">Envío</p>
                       <p className="mt-1 text-sm text-emerald-200">
                         {pedido.transportadora || "Transportadora por confirmar"} · Guía #{pedido.numero_guia}
+                      </p>
+                    </>
+                  )}
+
+                  {/* Novedad de envío: visible si el admin asignó detalles */}
+                  {pedido.novedad_detalle && (
+                    <>
+                      <p className="mt-4 text-xs uppercase tracking-widest text-orange-400">Mensaje del Operador / Transporte</p>
+                      <p className="mt-1 text-sm text-orange-200 italic font-medium bg-orange-500/5 border border-orange-500/10 p-3 rounded-xl mt-2">
+                        "{pedido.novedad_detalle}"
                       </p>
                     </>
                   )}
@@ -225,8 +249,116 @@ export default function PedidoPage() {
               </div>
             </section>
 
+            {/* ── Comprobante imprimible ── */}
+            <section
+              id="comprobante"
+              className="comprobante-print rounded-2xl border border-white/10 bg-zinc-950/70 p-5"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-bold text-white">Comprobante de pago</h2>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="no-print inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-white/10 transition"
+                  aria-label="Imprimir o guardar como PDF"
+                >
+                  <i className="ri-printer-line" aria-hidden />
+                  Imprimir / Guardar PDF
+                </button>
+              </div>
+
+              {/* Datos principales del comprobante */}
+              <dl className="comprobante-section grid gap-y-2 rounded-xl border border-white/5 bg-black/20 p-4 text-sm">
+                <div className="flex justify-between">
+                  <dt className="comprobante-text-muted text-zinc-500">Número de pedido</dt>
+                  <dd className="font-mono font-bold text-white">#{pedido.id_pedido}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="comprobante-text-muted text-zinc-500">Fecha</dt>
+                  <dd className="text-zinc-300">
+                    {pedido.fecha_pedido
+                      ? new Date(pedido.fecha_pedido).toLocaleString("es-CO", {
+                          year: "numeric", month: "long", day: "numeric",
+                          hour: "2-digit", minute: "2-digit",
+                        })
+                      : "Sin fecha"}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="comprobante-text-muted text-zinc-500">Método de pago</dt>
+                  <dd className="text-zinc-300">Pago Demo (simulado)</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="comprobante-text-muted text-zinc-500">Estado del pedido</dt>
+                  <dd className={`font-semibold ${
+                    pedido.estado === "entregado" ? "text-emerald-300" :
+                    pedido.estado === "enviado"   ? "text-blue-300"    :
+                    pedido.estado === "novedad"   ? "text-orange-300"  :
+                    pedido.estado === "devuelto"  ? "text-red-300"     :
+                    "text-amber-300"
+                  }`}>
+                    {pedido.estado === "pendiente" ? "Pendiente" :
+                     pedido.estado === "enviado"   ? "Enviado" :
+                     pedido.estado === "entregado" ? "Entregado" :
+                     pedido.estado === "novedad"   ? "Novedad en transporte" :
+                     pedido.estado === "devuelto"  ? "Devuelto" :
+                     "Pedido creado"}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="comprobante-text-muted text-zinc-500">Dirección de entrega</dt>
+                  <dd className="text-right text-zinc-300 max-w-[200px]">{pedido.direccion_envio || "Sin dirección"}</dd>
+                </div>
+                {pedido.transportadora && (
+                  <div className="flex justify-between">
+                    <dt className="comprobante-text-muted text-zinc-500">Transportadora</dt>
+                    <dd className="text-zinc-300">{pedido.transportadora}</dd>
+                  </div>
+                )}
+                {pedido.numero_guia && (
+                  <div className="flex justify-between">
+                    <dt className="comprobante-text-muted text-zinc-500">Número de guía</dt>
+                    <dd className="font-mono text-zinc-300">{pedido.numero_guia}</dd>
+                  </div>
+                )}
+                {pedido.novedad_detalle && (
+                  <div className="mt-2 border-t border-white/5 pt-2 flex flex-col gap-1">
+                    <dt className="comprobante-text-muted text-[10px] uppercase tracking-wider text-orange-400 font-bold">Novedad del envío</dt>
+                    <dd className="text-xs text-orange-300 italic font-mono bg-orange-950/20 p-2 rounded border border-orange-500/10 max-w-full break-words">
+                      "{pedido.novedad_detalle}"
+                    </dd>
+                  </div>
+                )}
+                <div className="mt-2 border-t border-white/10 pt-2 flex justify-between">
+                  <dt className="text-zinc-400 font-semibold">Total pagado</dt>
+                  <dd className="text-xl font-black text-white">{formatCOP(Number(pedido.total || 0))}</dd>
+                </div>
+              </dl>
+
+              {/* Detalle de productos en el comprobante */}
+              <div className="mt-4 space-y-1">
+                <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Productos comprados</p>
+                {(pedido.detalle_pedidos || []).map((detalle) => (
+                  <div
+                    key={detalle.id_producto}
+                    className="comprobante-section flex items-center justify-between rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-xs"
+                  >
+                    <span className="text-zinc-300">
+                      {detalle.productos?.nombre || `Producto #${detalle.id_producto}`}
+                      <span className="ml-1 text-zinc-500">x{detalle.cantidad}</span>
+                    </span>
+                    <span className="font-bold text-white">{formatCOP(Number(detalle.subtotal || 0))}</span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-4 text-[10px] text-zinc-600 text-center no-print">
+                Puedes guardar este comprobante como PDF desde la opción de imprimir de tu navegador.
+              </p>
+            </section>
+
             {/* ── Botones de acción ── */}
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="no-print flex flex-col gap-3 sm:flex-row">
               {/* Regresa a la tienda (catálogo de productos) */}
               <Link href="/user" className="inline-flex justify-center rounded-full bg-[#6b2ad4] px-6 py-3 text-sm font-bold text-white hover:bg-[#580096]">
                 Seguir comprando

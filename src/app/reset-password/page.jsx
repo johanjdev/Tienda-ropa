@@ -47,6 +47,9 @@ function ResetPasswordForm() {
   /** Confirmación de la nueva contraseña (debe coincidir con password) */
   const [confirm, setConfirm] = useState("")
 
+  /** Si es true, se muestra la contraseña en texto plano */
+  const [showPassword, setShowPassword] = useState(false)
+
   /** Indica si el formulario principal está siendo procesado */
   const [loading, setLoading] = useState(false)
 
@@ -176,26 +179,40 @@ function ResetPasswordForm() {
           />
 
           {/* Campo de la nueva contraseña */}
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Nueva contraseña"
-            autoComplete="new-password"
-            className="w-full rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-purple-500"
-          />
+          <div className="flex items-center rounded-xl border border-white/10 bg-black/50 px-3 focus-within:border-purple-500">
+            <i className="ri-lock-line text-zinc-500" aria-hidden />
+            <input
+              type={showPassword ? "text" : "password"}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Nueva contraseña"
+              autoComplete="new-password"
+              className="min-w-0 flex-1 bg-transparent p-3 text-white placeholder-zinc-600 outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="text-zinc-500 hover:text-white p-2 transition"
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            >
+              <i className={showPassword ? "ri-eye-off-line" : "ri-eye-line"} />
+            </button>
+          </div>
 
           {/* Campo de confirmación: debe ser idéntico al campo anterior */}
-          <input
-            type="password"
-            required
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            placeholder="Confirmar contraseña"
-            autoComplete="new-password"
-            className="w-full rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-purple-500"
-          />
+          <div className="flex items-center rounded-xl border border-white/10 bg-black/50 px-3 focus-within:border-purple-500">
+            <i className="ri-lock-line text-zinc-500" aria-hidden />
+            <input
+              type={showPassword ? "text" : "password"}
+              required
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder="Confirmar contraseña"
+              autoComplete="new-password"
+              className="min-w-0 flex-1 bg-transparent p-3 text-white placeholder-zinc-600 outline-none"
+            />
+          </div>
 
           {/* Botón de envío: deshabilitado mientras procesa */}
           <button

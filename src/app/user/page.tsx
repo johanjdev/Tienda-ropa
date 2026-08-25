@@ -7,6 +7,7 @@ import { loadCart, saveCart, type CartItem } from "@/lib/cart-storage"
 import Link from "next/link"
 import { formatCOP } from "@/lib/format"
 import FiltrosModal from "@/components/FiltrosModal"
+import Modal from "@/components/Modal"
 
 interface Producto {
   id_producto: number
@@ -35,6 +36,11 @@ export default function Catalogo() {
   const [precioMax, setPrecioMax] = useState(1000000)
   const [activeTab, setActiveTab] = useState<"categoria" | "precio">("categoria")
   const [filtrosOpen, setFiltrosOpen] = useState(false)
+
+  const [stockModalOpen, setStockModalOpen] = useState(false)
+  const [stockModalMsg, setStockModalMsg] = useState("")
+  const [successModalOpen, setSuccessModalOpen] = useState(false)
+  const [lastAddedProduct, setLastAddedProduct] = useState<Producto | null>(null)
 
   useEffect(() => {
     const fetchProductos = async () => {
@@ -114,6 +120,19 @@ export default function Catalogo() {
       const keyId = user?.id ?? null
       const current = loadCart(keyId)
       const existing = current.find((c) => c.id_producto === producto.id_producto)
+
+      const existingQty = existing ? existing.cantidad : 0
+      const maxStock = producto.stock ?? 0
+
+      // Si excede el stock, abrir modal de advertencia
+      if (existingQty + 1 > maxStock) {
+        setStockModalMsg(
+          `Lo sentimos, no puedes agregar más unidades de este producto. El stock disponible actual es de ${maxStock} unidades y ya tienes ${existingQty} en tu carrito.`
+        )
+        setStockModalOpen(true)
+        return
+      }
+
       let next: CartItem[]
       if (existing) {
         next = current.map((c) =>
@@ -134,6 +153,8 @@ export default function Catalogo() {
         ]
       }
       saveCart(keyId, next)
+      setLastAddedProduct(producto)
+      setSuccessModalOpen(true)
     },
     [user]
   )
@@ -396,6 +417,49 @@ export default function Catalogo() {
           </main>
         </div>
       </div>
+
+      <Modal
+        open={stockModalOpen}
+        onClose={() => setStockModalOpen(false)}
+        title="Límite de stock alcanzado"
+        variant="error"
+      >
+        <p>{stockModalMsg}</p>
+      </Modal>
+
+      <Modal
+        open={successModalOpen}
+        onClose={() => setSuccessModalOpen(false)}
+        title="¡Agregado con éxito!"
+        variant="info"
+      >
+        {lastAddedProduct && (
+          <div className="flex flex-col items-center text-center p-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 mb-4 animate-bounce">
+              <i className="ri-shopping-bag-3-line text-3xl" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-1">¡Producto en tu bolsa!</h3>
+            <p className="text-sm text-zinc-400 mb-6">
+              Has agregado <strong>{lastAddedProduct.nombre}</strong> a tu bolsa de compras con éxito.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <button
+                type="button"
+                onClick={() => setSuccessModalOpen(false)}
+                className="flex-1 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/5 transition"
+              >
+                Seguir comprando
+              </button>
+              <Link
+                href="/cart"
+                className="flex-1 rounded-full bg-[#6b2ad4] hover:bg-[#580096] px-5 py-3 text-sm font-bold text-white text-center transition"
+              >
+                Ir al carrito
+              </Link>
+            </div>
+          </div>
+        )}
+      </Modal>
     </>
   )
 }

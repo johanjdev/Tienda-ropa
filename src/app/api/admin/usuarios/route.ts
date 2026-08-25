@@ -101,9 +101,59 @@ export async function PATCH(request: Request) {
   if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status })
 
   const body = await request.json().catch(() => ({}))
+
+  // ── Caso 1: Cambio del campo `activo` en un usuario (reactivar/inactivar) ──
+  if (typeof body.activo === "boolean" && body.id_usuario) {
+    const idUsuario = Number(body.id_usuario)
+    const { url } = getSupabasePublicEnv()
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+    const serviceClient = serviceKey ? createClient(url, serviceKey) : admin.supabase
+
+    const { error: updateError } = await serviceClient
+      .from("usuarios")
+      .update({ activo: body.activo })
+      .eq("id_usuario", idUsuario)
+
+    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 400 })
+
+    // Si se reactiva, levantar el ban en Supabase Auth
+    if (body.activo && serviceKey) {
+      const { data: userData } = await serviceClient
+        .from("usuarios")
+        .select("auth_id")
+        .eq("id_usuario", idUsuario)
+        .maybeSingle()
+
+      if (userData?.auth_id) {
+        try {
+          const service = createClient(url, serviceKey)
+          // @ts-ignore
+          if (service?.auth?.admin?.updateUserById) {
+            // @ts-ignore
+            await service.auth.admin.updateUserById(String(userData.auth_id), {
+              ban_duration: "none",
+            })
+          }
+        } catch (_e) {
+          // Ignorar errores en Auth
+        }
+      }
+    }
+
+    await admin.supabase.from("logs").insert([{
+      id_usuario: admin.profile?.id_usuario ?? null,
+      accion: `Usuario ${body.activo ? "reactivado" : "inactivado"} #${idUsuario}`,
+      ip_usuario: request.headers.get("x-forwarded-for") || "local",
+    }])
+
+    return NextResponse.json({ ok: true })
+  }
+
+  // ── Caso 2: Renombrar un rol (lógica existente) ──
   const tipoRol = String(body.tipo_rol || "").trim().toLowerCase()
 
   if (!tipoRol) return NextResponse.json({ error: "Ingresa el nombre del rol." }, { status: 400 })
+
   if (!/^[a-z0-9 _-]{3,30}$/.test(tipoRol)) {
     return NextResponse.json({ error: "Usa entre 3 y 30 caracteres para el rol." }, { status: 400 })
   }
@@ -282,33 +332,37 @@ export async function DELETE(request: Request) {
 
   const { url } = getSupabasePublicEnv()
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+  const serviceClient = serviceKey ? createClient(url, serviceKey) : admin.supabase
 
+  // ── Soft Delete: marcar como inactivo en lugar de borrar físicamente ──
+  // Borrar físicamente causaría errores de integridad referencial con pedidos y logs.
+  const { error: inactivateError } = await serviceClient
+    .from("usuarios")
+    .update({ activo: false })
+    .eq("id_usuario", idUsuario)
+
+  if (inactivateError) return NextResponse.json({ error: inactivateError.message }, { status: 400 })
+
+  // Intentar también revocar acceso en Supabase Auth (deshabilitar cuenta)
   if (serviceKey && usuario.auth_id) {
     try {
       const service = createClient(url, serviceKey)
-      // Attempt to delete the auth user (best-effort)
-      // Use deleteUserById to match other admin methods (may vary by SDK)
-      // If this fails we will continue and try to remove the DB row below.
       // @ts-ignore
-      if (service?.auth?.admin?.deleteUserById) {
+      if (service?.auth?.admin?.updateUserById) {
         // @ts-ignore
-        await service.auth.admin.deleteUserById(String(usuario.auth_id))
-      } else if (service?.auth?.admin?.deleteUser) {
-        // @ts-ignore
-        await service.auth.admin.deleteUser(String(usuario.auth_id))
+        await service.auth.admin.updateUserById(String(usuario.auth_id), {
+          ban_duration: "876600h", // 100 años ≈ permanente
+        })
       }
-    } catch (e) {
-      // ignore auth deletion errors and continue with DB cleanup
+    } catch (_e) {
+      // Ignorar errores en Auth y continuar — el soft delete en DB es suficiente
     }
   }
-
-  const { error: delError } = await admin.supabase.from("usuarios").delete().eq("id_usuario", idUsuario)
-  if (delError) return NextResponse.json({ error: delError.message }, { status: 400 })
 
   await admin.supabase.from("logs").insert([
     {
       id_usuario: admin.profile?.id_usuario ?? null,
-      accion: `Usuario eliminado #${idUsuario}`,
+      accion: `Usuario inactivado #${idUsuario}`,
       ip_usuario: request.headers.get("x-forwarded-for") || "local",
     },
   ])

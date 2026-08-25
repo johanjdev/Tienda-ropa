@@ -97,6 +97,7 @@ export async function POST(
       fecha_pedido,
       numero_guia,
       transportadora,
+      novedad_detalle,
       detalle_pedidos(
         id_producto,
         cantidad,

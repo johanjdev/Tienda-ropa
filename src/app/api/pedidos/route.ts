@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ pedidos: [] }, { headers: { "Cache-Control": "no-store" } })
   }
 
-  const { data, error } = await supabase.from("pedidos").select(`id_pedido, estado, total, fecha_pedido, numero_guia, transportadora, detalle_pedidos(id_detalle, id_producto, cantidad, precio_unitario, subtotal, productos(nombre, imagen_url))`).eq("id_usuario", usuario.id_usuario).order("id_pedido", { ascending: false })
+  const { data, error } = await supabase.from("pedidos").select(`id_pedido, estado, total, fecha_pedido, numero_guia, transportadora, novedad_detalle, detalle_pedidos(id_detalle, id_producto, cantidad, precio_unitario, subtotal, productos(nombre, imagen_url))`).eq("id_usuario", usuario.id_usuario).order("id_pedido", { ascending: false })
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ pedidos: data ?? [] }, { headers: { "Cache-Control": "no-store" } })
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useEffect, useState, type FormEvent } from "react"
 import { useAuth } from "@/components/AuthProvider"
 import Modal from "@/components/Modal"
@@ -15,7 +16,8 @@ type Pedido = {
   fecha_pedido: string | null
   numero_guia: string | null
   transportadora: string | null
-  detalle_pedidos?: { id_detalle: number; cantidad: number; subtotal: number; productos?: { nombre: string | null } | null }[]
+  novedad_detalle?: string | null
+  detalle_pedidos?: { id_detalle: number; id_producto: number; cantidad: number; subtotal: number; productos?: { nombre: string | null } | null }[]
 }
 
 export default function CuentaPage() {
@@ -27,6 +29,7 @@ export default function CuentaPage() {
   const [newPass, setNewPass] = useState("")
   const [confirmPass, setConfirmPass] = useState("")
   const [savingPass, setSavingPass] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTitle, setModalTitle] = useState("")
   const [modalMsg, setModalMsg] = useState("")
@@ -34,6 +37,8 @@ export default function CuentaPage() {
   const [tipoDocumento, setTipoDocumento] = useState("")
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [pedidosError, setPedidosError] = useState<string | null>(null)
+  const [devoluciones, setDevoluciones] = useState<{ id_pedido: number; id_producto: number; estado: string }[]>([])
+  const router = useRouter()
 
   useEffect(() => {
     if (!profile) return
@@ -46,16 +51,20 @@ export default function CuentaPage() {
     const loadExtraData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) return
-      const [tiposResponse, pedidosResponse] = await Promise.all([
+      const headers = { Authorization: `Bearer ${session.access_token}` }
+      const [tiposResponse, pedidosResponse, devolucionesResponse] = await Promise.all([
         fetch("/api/tipo-documento", { method: "POST", cache: "no-store" }),
-        fetch("/api/pedidos", { method: "POST", cache: "no-store", headers: { Authorization: `Bearer ${session.access_token}` } }),
+        fetch("/api/pedidos", { method: "POST", cache: "no-store", headers }),
+        fetch("/api/devoluciones", { method: "POST", cache: "no-store", headers }),
       ])
       const tiposBody = await tiposResponse.json().catch(() => ({}))
       const pedidosBody = await pedidosResponse.json().catch(() => ({}))
+      const devBody = await devolucionesResponse.json().catch(() => ({}))
       const tipo = (tiposBody.data || []).find((item: { id_tipo_documento: number }) => Number(item.id_tipo_documento) === Number(profile?.id_tipo_documento))
       setTipoDocumento(tipo?.descripcion || "")
       if (pedidosResponse.ok) setPedidos(pedidosBody.pedidos || [])
       else setPedidosError(pedidosBody.error || "No se pudieron cargar tus pedidos.")
+      if (devolucionesResponse.ok) setDevoluciones(devBody.devoluciones || [])
     }
     void loadExtraData()
   }, [profile?.id_tipo_documento, user?.id])
@@ -70,22 +79,43 @@ export default function CuentaPage() {
   const handleSaveProfile = async (e: FormEvent) => {
     e.preventDefault()
     if (!user) return
+    
+    const cleanNombre = nombre.trim()
+    const cleanTelefono = telefono.trim().replace(/[^0-9]/g, "")
+    const cleanDireccion = direccion.trim()
+
+    if (!cleanNombre) {
+      openModal("Error de validación", "El nombre completo es obligatorio.", "error")
+      return
+    }
+    if (cleanNombre.length > 80) {
+      openModal("Error de validación", "El nombre completo no puede superar los 80 caracteres.", "error")
+      return
+    }
+    if (cleanTelefono && cleanTelefono.length !== 10) {
+      openModal("Error de validación", "El número de teléfono debe tener exactamente 10 dígitos numéricos.", "error")
+      return
+    }
+    if (cleanDireccion && cleanDireccion.length > 150) {
+      openModal("Error de validación", "La dirección de envío no puede superar los 150 caracteres.", "error")
+      return
+    }
+
     setSavingProfile(true)
     try {
       const { error } = await supabase
         .from("usuarios")
         .update({
-          nombre: nombre.trim() || null,
-          telefono: normalizeIntValue(telefono),
-          direccion: direccion.trim() || null,
+          nombre: cleanNombre || null,
+          telefono: cleanTelefono || null,
+          direccion: cleanDireccion || null,
         })
         .eq("auth_id", user.id)
 
       if (error) throw error
 
-      const trimmed = nombre.trim()
-      if (trimmed) {
-        await supabase.auth.updateUser({ data: { full_name: trimmed } })
+      if (cleanNombre) {
+        await supabase.auth.updateUser({ data: { full_name: cleanNombre } })
       }
 
       await refreshProfile()
@@ -247,6 +277,7 @@ export default function CuentaPage() {
                   <input
                     type="text"
                     value={nombre}
+                    maxLength={80}
                     onChange={(e) => setNombre(e.target.value)}
                     className="w-full rounded-xl border border-white/10 bg-black/60 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500 transition"
                     autoComplete="name"
@@ -259,11 +290,12 @@ export default function CuentaPage() {
                     Número de teléfono
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     inputMode="numeric"
-                    min="0"
+                    pattern="[0-9]*"
+                    maxLength={10}
                     value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
+                    onChange={(e) => setTelefono(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
                     className="w-full rounded-xl border border-white/10 bg-black/60 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500 transition font-mono"
                     autoComplete="tel"
                   />
@@ -276,6 +308,7 @@ export default function CuentaPage() {
                   </label>
                   <textarea
                     value={direccion}
+                    maxLength={150}
                     onChange={(e) => setDireccion(e.target.value)}
                     rows={2}
                     className="w-full resize-none rounded-xl border border-white/10 bg-black/60 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500 transition"
@@ -312,28 +345,42 @@ export default function CuentaPage() {
                   <label className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
                     Nueva contraseña
                   </label>
-                  <input
-                    type="password"
-                    value={newPass}
-                    onChange={(e) => setNewPass(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-black/60 px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500 transition"
-                    autoComplete="new-password"
-                    minLength={6}
-                  />
+                  <div className="flex items-center rounded-xl border border-white/10 bg-black/50 px-3 focus-within:border-purple-500">
+                    <i className="ri-lock-line text-zinc-500 mr-1.5" aria-hidden />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={newPass}
+                      onChange={(e) => setNewPass(e.target.value)}
+                      className="min-w-0 flex-1 bg-transparent py-2.5 text-xs text-white placeholder-zinc-600 outline-none"
+                      autoComplete="new-password"
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-zinc-500 hover:text-white p-1 transition"
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                      <i className={showPassword ? "ri-eye-off-line text-xs" : "ri-eye-line text-xs"} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
                   <label className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
                     Confirmar contraseña
                   </label>
-                  <input
-                    type="password"
-                    value={confirmPass}
-                    onChange={(e) => setConfirmPass(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-black/60 px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500 transition"
-                    autoComplete="new-password"
-                    minLength={6}
-                  />
+                  <div className="flex items-center rounded-xl border border-white/10 bg-black/50 px-3 focus-within:border-purple-500">
+                    <i className="ri-lock-line text-zinc-500 mr-1.5" aria-hidden />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={confirmPass}
+                      onChange={(e) => setConfirmPass(e.target.value)}
+                      className="min-w-0 flex-1 bg-transparent py-2.5 text-xs text-white placeholder-zinc-600 outline-none"
+                      autoComplete="new-password"
+                      minLength={6}
+                    />
+                  </div>
                 </div>
 
                 <button
@@ -380,10 +427,20 @@ export default function CuentaPage() {
               ) : (
                 <div className="space-y-4">
                   {pedidos.map((pedido) => {
-                    const isPending = (pedido.estado || "").toLowerCase() === "pendiente"
-                    const isShipped = (pedido.estado || "").toLowerCase() === "enviado"
+                    const isPending   = (pedido.estado || "").toLowerCase() === "pendiente"
+                    const isShipped   = (pedido.estado || "").toLowerCase() === "enviado"
                     const isCompleted = (pedido.estado || "").toLowerCase() === "entregado" || (pedido.estado || "").toLowerCase() === "completado"
+                    const isNovedad   = (pedido.estado || "").toLowerCase() === "novedad"
+                    const isDevuelto  = (pedido.estado || "").toLowerCase() === "devuelto"
                     
+                    const estadoLabel =
+                      isPending   ? "Pendiente" :
+                      isShipped   ? "Enviado" :
+                      isCompleted ? "Entregado" :
+                      isNovedad   ? "Novedad en transporte" :
+                      isDevuelto  ? "Devuelto" :
+                      pedido.estado || "Pendiente"
+
                     return (
                       <article
                         key={pedido.id_pedido}
@@ -419,31 +476,72 @@ export default function CuentaPage() {
                                   ? "bg-blue-500/10 border-blue-500/30 text-blue-400"
                                   : isCompleted
                                   ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                  : isNovedad
+                                  ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                                  : isDevuelto
+                                  ? "bg-red-500/10 border-red-500/30 text-red-400"
                                   : "bg-purple-500/10 border-purple-500/30 text-purple-400"
                               }`}
                             >
-                              {pedido.estado || "Pendiente"}
+                              {estadoLabel}
                             </span>
                           </div>
                         </div>
 
                         {/* Productos del pedido */}
                         <ul className="space-y-3.5 pl-1">
-                          {(pedido.detalle_pedidos || []).map((detalle) => (
-                            <li key={detalle.id_detalle} className="flex justify-between items-start gap-4 text-sm text-zinc-300">
-                              <div className="flex items-start gap-2.5">
-                                <span className="inline-block bg-white/5 px-2 py-0.5 rounded text-xs text-purple-300 font-bold font-mono">
-                                  {detalle.cantidad}x
-                                </span>
-                                <span className="font-semibold text-white/90">
-                                  {detalle.productos?.nombre || "Producto"}
-                                </span>
-                              </div>
-                              <span className="font-mono text-xs text-zinc-400 tabular-nums">
-                                {formatCOP(detalle.subtotal)}
-                              </span>
-                            </li>
-                          ))}
+                          {(pedido.detalle_pedidos || []).map((detalle) => {
+                            const devolucion = devoluciones.find(
+                              (d) => d.id_pedido === pedido.id_pedido && d.id_producto === detalle.id_producto
+                            )
+                            return (
+                              <li key={detalle.id_detalle} className="flex flex-col gap-2">
+                                <div className="flex justify-between items-start gap-4 text-sm text-zinc-300">
+                                  <div className="flex items-start gap-2.5">
+                                    <span className="inline-block bg-white/5 px-2 py-0.5 rounded text-xs text-purple-300 font-bold font-mono">
+                                      {detalle.cantidad}x
+                                    </span>
+                                    <span className="font-semibold text-white/90">
+                                      {detalle.productos?.nombre || "Producto"}
+                                    </span>
+                                  </div>
+                                  <span className="font-mono text-xs text-zinc-400 tabular-nums">
+                                    {formatCOP(detalle.subtotal)}
+                                  </span>
+                                </div>
+                                {/* Botón o badge de devolución — solo en pedidos entregados */}
+                                {pedido.estado === "entregado" && (
+                                  <div className="pl-8">
+                                    {devolucion ? (
+                                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                        devolucion.estado === "pendiente"
+                                          ? "bg-orange-500/10 border border-orange-500/20 text-orange-400"
+                                          : devolucion.estado === "aprobada"
+                                          ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                                          : "bg-red-500/10 border border-red-500/20 text-red-400"
+                                      }`}>
+                                        <i className={`text-sm ${
+                                          devolucion.estado === "pendiente" ? "ri-time-line" :
+                                          devolucion.estado === "aprobada" ? "ri-checkbox-circle-line" :
+                                          "ri-close-circle-line"
+                                        }`} />
+                                        Devolución {devolucion.estado}
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => router.push(`/user/devolucion?id_pedido=${pedido.id_pedido}&id_producto=${detalle.id_producto}`)}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-zinc-400 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all duration-200"
+                                      >
+                                        <i className="ri-arrow-go-back-line text-sm" />
+                                        Solicitar devolución
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </li>
+                            )
+                          })}
                         </ul>
 
                         {/* Tracking de envío / Guía */}
@@ -454,6 +552,19 @@ export default function CuentaPage() {
                               <p className="font-bold text-emerald-300 uppercase tracking-wider text-[9px]">Información de Envío</p>
                               <p className="text-zinc-300 mt-0.5">
                                 {pedido.transportadora || "Transportadora"} · Guía: <span className="font-mono font-bold text-white select-all">{pedido.numero_guia}</span>
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Detalle de Novedad o Notas de Transporte */}
+                        {pedido.novedad_detalle && (
+                          <div className="mt-3 p-3.5 rounded-xl bg-orange-500/5 border border-orange-500/15 flex items-start gap-3">
+                            <i className="ri-error-warning-fill text-orange-400 text-lg mt-0.5" />
+                            <div className="text-xs">
+                              <p className="font-bold text-orange-400 uppercase tracking-wider text-[9px]">Novedad en el Transporte / Mensaje del operador</p>
+                              <p className="text-zinc-300 mt-1 italic font-medium leading-relaxed">
+                                "{pedido.novedad_detalle}"
                               </p>
                             </div>
                           </div>
