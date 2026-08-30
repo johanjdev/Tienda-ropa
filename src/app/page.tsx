@@ -135,8 +135,8 @@ export default function HomePage() {
     () => [
       // ── Fila 1 ─────────────────────────────────────────────
       { id: 6,  hover: '/imagenes/principal/bufandamaterial.png' },
-      { id: 7,  hover: '/imagenes/principal/bufandamaterial.png' },
-      { id: 10, hover: '/imagenes/principal/bufandamaterial.png' },
+      { id: 7,  hover: '/imagenes/principal/camisavshilos.png' },
+      { id: 10, hover: '/imagenes/principal/lanah2.png' },
     ],
     []
   )
