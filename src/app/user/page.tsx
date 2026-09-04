@@ -389,10 +389,10 @@ export default function Catalogo() {
                     <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between">
                       <div className="mb-2 sm:mb-3">
                         <p className="text-xs uppercase tracking-wider text-purple-400/70 font-semibold line-clamp-1 mb-1">
-                          {etiquetaCategoriaProducto(producto)}
+                          {producto.nombre}
                         </p>
                         <h3 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 group-hover:text-purple-300 transition">
-                          {producto.nombre}
+                          {producto.descripcion}
                         </h3>
                       </div>
 
