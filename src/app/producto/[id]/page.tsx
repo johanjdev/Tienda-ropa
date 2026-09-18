@@ -56,6 +56,16 @@ export default function ProductoPage() {
   const [stockModalOpen, setStockModalOpen] = useState(false)
   const [stockModalMsg, setStockModalMsg] = useState("")
   const [successModalOpen, setSuccessModalOpen] = useState(false)
+  const [guiaTallasOpen, setGuiaTallasOpen] = useState(false)
+
+  useEffect(() => {
+    if (!guiaTallasOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setGuiaTallasOpen(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [guiaTallasOpen])
 
   useEffect(() => {
     let cancelled = false
@@ -332,7 +342,12 @@ export default function ProductoPage() {
                       * Por favor selecciona una talla
                     </span>
                   ) : (
-                    <button type="button" className="text-xs text-zinc-400 hover:text-white underline transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => setGuiaTallasOpen(true)}
+                      className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white underline transition-colors cursor-pointer"
+                    >
+                      <i className="ri-ruler-line text-sm" />
                       Guía de tallas
                     </button>
                   )}
@@ -452,6 +467,65 @@ export default function ProductoPage() {
           </div>
         </div>
       </Modal>
+
+      {/* ── MODAL GUÍA DE TALLAS ──────────────────────────── */}
+      {guiaTallasOpen && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0 bg-black/85 backdrop-blur-md"
+            onClick={() => setGuiaTallasOpen(false)}
+          />
+          <div className="relative z-[121] w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl bg-zinc-950 border border-white/15 p-4 sm:p-6 shadow-2xl shadow-black/80">
+            {/* Header del modal */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                  <i className="ri-ruler-2-line text-xl" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">Guía de Tallas</h3>
+                  <p className="text-xs text-zinc-400">Hombre y Mujer · Medidas corporales en centímetros (cm)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGuiaTallasOpen(false)}
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                aria-label="Cerrar guía de tallas"
+              >
+                <i className="ri-close-line text-2xl" />
+              </button>
+            </div>
+
+            {/* Contenedor de la imagen */}
+            <div className="overflow-auto rounded-2xl border border-white/10 bg-white p-2 sm:p-4 flex items-center justify-center">
+              <img
+                src="/imagenes/guia-tallas.jpg"
+                alt="Guía de tallas Hombre y Mujer - Arquetipo"
+                className="w-full h-auto max-h-[65vh] object-contain rounded-xl"
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="mt-4 flex items-center justify-between flex-shrink-0">
+              <span className="text-[11px] text-zinc-500">
+                * Las medidas son aproximadas. Si estás entre dos tallas, te sugerimos elegir la más grande.
+              </span>
+              <button
+                type="button"
+                onClick={() => setGuiaTallasOpen(false)}
+                className="rounded-full bg-zinc-800 hover:bg-zinc-700 px-6 py-2.5 text-xs font-bold text-white transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

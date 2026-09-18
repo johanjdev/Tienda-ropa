@@ -362,50 +362,53 @@ export default function Catalogo() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
 
                 {filtered.map((producto) => (
                   <div
                     key={producto.id_producto}
-                    className="group overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/50 flex flex-col h-full"
+                    className="group rounded-[2.2rem] bg-[#18181b] border border-white/10 p-3.5 shadow-xl shadow-black/50 hover:border-purple-500/40 hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/producto/${producto.id_producto}`} className="block overflow-hidden flex-1">
-                      <div className="relative aspect-[3/4] w-full overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950">
+                    <Link href={`/producto/${producto.id_producto}`} className="block">
+                      <div className="relative aspect-square w-full rounded-[1.6rem] bg-zinc-950/60 border border-white/5 overflow-hidden flex items-center justify-center p-2">
                         {producto.imagen_url ? (
                           <img
                             src={producto.imagen_url}
                             alt={producto.nombre}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            className="h-full w-full object-cover rounded-2xl transition-transform duration-500 group-hover:scale-105"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-white/5 text-zinc-600 font-medium text-xs">
+                          <div className="flex h-full w-full items-center justify-center text-zinc-500 font-medium text-xs">
                             Sin imagen
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
                     </Link>
 
-                    <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between">
-                      <div className="mb-2 sm:mb-3">
-                        <p className="text-xs uppercase tracking-wider text-purple-400/70 font-semibold line-clamp-1 mb-1">
+                    <div className="px-2 pt-4 pb-1 flex flex-col justify-between flex-1">
+                      <div>
+                        <Link href={`/producto/${producto.id_producto}`}>
+                          <h3 className="text-base font-bold text-white leading-tight truncate group-hover:text-purple-300 transition-colors">
+                            {producto.nombre}
+                          </h3>
+                        </Link>
+                        <p className="text-xs sm:text-sm font-medium text-zinc-400 mt-1 truncate">
                           {etiquetaCategoriaProducto(producto)}
                         </p>
-                        <h3 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 group-hover:text-purple-300 transition">
-                          {producto.nombre}
-                        </h3>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2 pt-2 sm:pt-3 border-t border-white/10">
-                        <p className="text-sm sm:text-lg font-black text-white">
+                      <div className="mt-5 flex items-center justify-between gap-2">
+                        <span className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight">
                           {formatCOP(producto.precio)}
-                        </p>
+                        </span>
                         <button
                           type="button"
                           onClick={() => addToCart(producto)}
-                          className="rounded-lg bg-purple-600 hover:bg-purple-700 px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-white transition-colors duration-200 active:scale-95"
+                          title="Añadir al carrito"
+                          aria-label={`Añadir ${producto.nombre} al carrito`}
+                          className="w-11 h-11 rounded-2xl bg-white text-zinc-950 flex items-center justify-center shadow-lg hover:bg-purple-500 hover:text-white active:scale-95 transition-all duration-300 flex-shrink-0"
                         >
-                          Añadir
+                          <i className="ri-shopping-bag-3-line text-lg" />
                         </button>
                       </div>
                     </div>
