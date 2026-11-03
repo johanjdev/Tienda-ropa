@@ -271,10 +271,11 @@ export default function CuentaPage() {
 
                 {/* Campo Nombre */}
                 <div className="space-y-1">
-                  <label className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
+                  <label htmlFor="perfil-nombre" className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
                     Nombre completo
                   </label>
                   <input
+                    id="perfil-nombre"
                     type="text"
                     value={nombre}
                     maxLength={80}
@@ -286,10 +287,11 @@ export default function CuentaPage() {
 
                 {/* Campo Teléfono */}
                 <div className="space-y-1">
-                  <label className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
+                  <label htmlFor="perfil-telefono" className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
                     Número de teléfono
                   </label>
                   <input
+                    id="perfil-telefono"
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
@@ -303,10 +305,11 @@ export default function CuentaPage() {
 
                 {/* Campo Dirección */}
                 <div className="space-y-1">
-                  <label className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
+                  <label htmlFor="perfil-direccion" className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
                     Dirección de envío
                   </label>
                   <textarea
+                    id="perfil-direccion"
                     value={direccion}
                     maxLength={150}
                     onChange={(e) => setDireccion(e.target.value)}
@@ -342,12 +345,13 @@ export default function CuentaPage() {
               
               <form onSubmit={handleChangePassword} className="space-y-3">
                 <div className="space-y-1">
-                  <label className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
+                  <label htmlFor="nueva-contrasena" className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
                     Nueva contraseña
                   </label>
                   <div className="flex items-center rounded-xl border border-white/10 bg-black/50 px-3 focus-within:border-purple-500">
                     <i className="ri-lock-line text-zinc-500 mr-1.5" aria-hidden />
                     <input
+                      id="nueva-contrasena"
                       type={showPassword ? "text" : "password"}
                       value={newPass}
                       onChange={(e) => setNewPass(e.target.value)}
@@ -367,12 +371,13 @@ export default function CuentaPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
+                  <label htmlFor="confirmar-contrasena" className="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
                     Confirmar contraseña
                   </label>
                   <div className="flex items-center rounded-xl border border-white/10 bg-black/50 px-3 focus-within:border-purple-500">
                     <i className="ri-lock-line text-zinc-500 mr-1.5" aria-hidden />
                     <input
+                      id="confirmar-contrasena"
                       type={showPassword ? "text" : "password"}
                       value={confirmPass}
                       onChange={(e) => setConfirmPass(e.target.value)}
@@ -381,8 +386,9 @@ export default function CuentaPage() {
                       minLength={6}
                     />
                   </div>
-                </div>
+                </div>```
 
+                
                 <button
                   type="submit"
                   disabled={savingPass}

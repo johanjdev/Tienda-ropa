@@ -186,7 +186,7 @@ export default function AdminPedidosPage() {
                       {openDropdownId === pedido.id_pedido && (
                         <>
                           {/* Backdrop invisible para cerrar al dar clic fuera */}
-                          <div 
+                          <button 
                             className="fixed inset-0 z-40" 
                             onClick={() => setOpenDropdownId(null)}
                           />

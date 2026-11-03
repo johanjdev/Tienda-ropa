@@ -504,8 +504,9 @@ export default function CartPage() {
                     {/* Inputs de la tarjeta */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="col-span-2 space-y-1">
-                        <label className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Número de tarjeta</label>
+                        <label htmlFor="numero-tarjeta" className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Número de tarjeta</label>
                         <input
+                          id="numero-tarjeta"
                           type="text"
                           maxLength={19}
                           placeholder="4242 4242 4242 4242"
@@ -515,8 +516,9 @@ export default function CartPage() {
                         />
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Nombre en la tarjeta</label>
+                        <label htmlFor="nombre-tarjeta" className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Nombre en la tarjeta</label>
                         <input
+                          id="nombre-tarjeta"
                           type="text"
                           placeholder="JUAN PEREZ"
                           value={nombreTarj}
@@ -525,8 +527,9 @@ export default function CartPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Expiración</label>
+                        <label htmlFor="fecha-expiracion" className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Expiración</label>
                         <input
+                          id="fecha-expiracion"
                           type="text"
                           maxLength={5}
                           placeholder="MM/YY"
@@ -536,8 +539,9 @@ export default function CartPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">CVC</label>
+                        <label htmlFor="cvc-tarjeta" className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">CVC</label>
                         <input
+                          id="cvc-tarjeta"
                           type="password"
                           maxLength={4}
                           placeholder="•••"
@@ -549,7 +553,6 @@ export default function CartPage() {
                     </div>
                   </div>
                 )}
-
                 {/* ── CONTENIDO METODO: PSE ─────────────────────── */}
                 {metodoPago === "pse" && (
                   <div className="space-y-4">
@@ -557,10 +560,10 @@ export default function CartPage() {
                       <div className="bg-blue-600 px-3 py-1 rounded font-black italic text-xs tracking-wider text-white">PSE</div>
                       <p className="text-xs text-zinc-300">Pago seguro con débito directo desde tu cuenta bancaria.</p>
                     </div>
-
                     <div className="space-y-1">
-                      <label className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Banco</label>
+                      <label htmlFor="pse-banco" className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Banco</label>
                       <select
+                        id="pse-banco"
                         value={pseBanco}
                         onChange={(e) => setPseBanco(e.target.value)}
                         className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-purple-500 transition cursor-pointer"
@@ -578,11 +581,11 @@ export default function CartPage() {
                         <option value="Banco Falabella">Banco Falabella</option>
                       </select>
                     </div>
-
                     <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1">
-                        <label className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Tipo Doc</label>
+                        <label htmlFor="pse-tipo-documento" className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Tipo Doc</label>
                         <select
+                          id="pse-tipo-documento"
                           value={pseDocType}
                           onChange={(e) => setPseDocType(e.target.value)}
                           className="w-full rounded-xl border border-white/10 bg-black px-3 py-3 text-sm text-zinc-300 outline-none focus:border-purple-500 transition cursor-pointer"
@@ -594,8 +597,9 @@ export default function CartPage() {
                         </select>
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Número de documento</label>
+                        <label htmlFor="pse-numero-documento" className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Número de documento</label>
                         <input
+                          id="pse-numero-documento"
                           type="text"
                           placeholder="123456789"
                           value={pseDocNum}
@@ -604,10 +608,10 @@ export default function CartPage() {
                         />
                       </div>
                     </div>
-
                     <div className="space-y-1">
-                      <label className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Correo registrado en PSE</label>
+                      <label htmlFor="pse-correo" className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Correo registrado en PSE</label>
                       <input
+                        id="pse-correo"
                         type="email"
                         placeholder="ejemplo@email.com"
                         value={pseEmail}
@@ -617,7 +621,6 @@ export default function CartPage() {
                     </div>
                   </div>
                 )}
-
                 {/* ── CONTENIDO METODO: BILLETERA (Nequi / Daviplata) ── */}
                 {metodoPago === "billetera" && (
                   <div className="space-y-4">
@@ -652,19 +655,18 @@ export default function CartPage() {
                         Daviplata
                       </button>
                     </div>
-
                     <div className="bg-zinc-900 border border-white/5 rounded-xl p-4 text-xs text-zinc-400 space-y-1">
                       <p className="font-semibold text-zinc-300">¿Cómo funciona?</p>
                       <p>1. Ingresa tu número de celular registrado.</p>
                       <p>2. Haz clic en "Pagar ahora".</p>
                       <p>3. Recibirás una notificación en tu app celular para confirmar la transacción.</p>
                     </div>
-
                     <div className="space-y-1">
-                      <label className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Número de celular</label>
+                      <label htmlFor="wallet-phone" className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Número de celular</label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-zinc-500 font-semibold font-mono">+57</span>
                         <input
+                          id="wallet-phone"
                           type="text"
                           maxLength={10}
                           placeholder="300 123 4567"
@@ -676,7 +678,7 @@ export default function CartPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </div>```
 
               <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
                 <h2 className="mb-4 text-lg font-bold">Productos</h2>
