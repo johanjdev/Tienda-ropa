@@ -39,25 +39,12 @@ export async function requireAdminPanelReader(request: Request) {
 }
 
 export async function requireRole(request: Request, allowedRoles: string[], allowedRoleIds: number[] = []) {
-  const authUser = await getAuthUser(request)
-  if (!authUser || !authUser.id_usuario) {
-    return { error: "No autorizado. Sesión no válida.", status: 401 as const }
+  const authResult = await requireUser(request)
+  if ("error" in authResult) {
+    return authResult
   }
 
-  const db = getDbClient()
-  const { data: profile, error: profileError } = await db
-    .from("usuarios")
-    .select("*")
-    .eq("id_usuario", authUser.id_usuario)
-    .maybeSingle()
-
-  if (profileError || !profile) {
-    return { error: "Usuario no encontrado.", status: 401 as const }
-  }
-
-  if (profile.activo === false) {
-    return { error: "Cuenta desactivada.", status: 403 as const }
-  }
+  const { db, profile, user: authUser } = authResult
 
   const { data: role } = await db
     .from("roles")
