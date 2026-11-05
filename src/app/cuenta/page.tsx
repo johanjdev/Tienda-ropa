@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, type FormEvent } from "react"
 import { useAuth } from "@/components/AuthProvider"
 import Modal from "@/components/Modal"
-import { supabase } from "@/lib/supabase"
 import { formatCOP } from "@/lib/format"
 import { normalizeIntValue } from "@/lib/number-fields"
 
@@ -49,22 +48,23 @@ export default function CuentaPage() {
 
   useEffect(() => {
     const loadExtraData = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
-      const headers = { Authorization: `Bearer ${session.access_token}` }
-      const [tiposResponse, pedidosResponse, devolucionesResponse] = await Promise.all([
-        fetch("/api/tipo-documento", { method: "POST", cache: "no-store" }),
-        fetch("/api/pedidos", { method: "POST", cache: "no-store", headers }),
-        fetch("/api/devoluciones", { method: "POST", cache: "no-store", headers }),
-      ])
-      const tiposBody = await tiposResponse.json().catch(() => ({}))
-      const pedidosBody = await pedidosResponse.json().catch(() => ({}))
-      const devBody = await devolucionesResponse.json().catch(() => ({}))
-      const tipo = (tiposBody.data || []).find((item: { id_tipo_documento: number }) => Number(item.id_tipo_documento) === Number(profile?.id_tipo_documento))
-      setTipoDocumento(tipo?.descripcion || "")
-      if (pedidosResponse.ok) setPedidos(pedidosBody.pedidos || [])
-      else setPedidosError(pedidosBody.error || "No se pudieron cargar tus pedidos.")
-      if (devolucionesResponse.ok) setDevoluciones(devBody.devoluciones || [])
+      try {
+        const [tiposResponse, pedidosResponse, devolucionesResponse] = await Promise.all([
+          fetch("/api/tipo-documento", { method: "POST", cache: "no-store" }),
+          fetch("/api/pedidos", { method: "POST", cache: "no-store" }),
+          fetch("/api/devoluciones", { method: "POST", cache: "no-store" }),
+        ])
+        const tiposBody = await tiposResponse.json().catch(() => ({}))
+        const pedidosBody = await pedidosResponse.json().catch(() => ({}))
+        const devBody = await devolucionesResponse.json().catch(() => ({}))
+        const tipo = (tiposBody.data || []).find((item: { id_tipo_documento: number }) => Number(item.id_tipo_documento) === Number(profile?.id_tipo_documento))
+        setTipoDocumento(tipo?.descripcion || "")
+        if (pedidosResponse.ok) setPedidos(pedidosBody.pedidos || [])
+        else setPedidosError(pedidosBody.error || "No se pudieron cargar tus pedidos.")
+        if (devolucionesResponse.ok) setDevoluciones(devBody.devoluciones || [])
+      } catch (e) {
+        console.error("Error al cargar datos adicionales de cuenta:", e)
+      }
     }
     void loadExtraData()
   }, [profile?.id_tipo_documento, user?.id])
@@ -103,20 +103,18 @@ export default function CuentaPage() {
 
     setSavingProfile(true)
     try {
-      const { error } = await supabase
-        .from("usuarios")
-        .update({
-          nombre: cleanNombre || null,
+      const res = await fetch("/api/auth/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: cleanNombre,
           telefono: cleanTelefono || null,
           direccion: cleanDireccion || null,
-        })
-        .eq("auth_id", user.id)
+        }),
+      })
 
-      if (error) throw error
-
-      if (cleanNombre) {
-        await supabase.auth.updateUser({ data: { full_name: cleanNombre } })
-      }
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Error al actualizar perfil.")
 
       await refreshProfile()
       openModal("Datos actualizados", "Tu información se guardó correctamente.", "success")
@@ -137,8 +135,8 @@ export default function CuentaPage() {
       openModal("Contraseña", "Escribe la nueva contraseña.", "error")
       return
     }
-    if (newPass.length < 6) {
-      openModal("Contraseña", "La contraseña debe tener al menos 6 caracteres.", "error")
+    if (newPass.length < 8) {
+      openModal("Contraseña", "La contraseña debe tener al menos 8 caracteres.", "error")
       return
     }
     if (newPass !== confirmPass) {
@@ -148,8 +146,15 @@ export default function CuentaPage() {
 
     setSavingPass(true)
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPass })
-      if (error) throw error
+      const res = await fetch("/api/auth/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: newPass }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Error al cambiar contraseña.")
+
       setNewPass("")
       setConfirmPass("")
       openModal("Contraseña actualizada", "Tu nueva contraseña ya está activa.", "success")

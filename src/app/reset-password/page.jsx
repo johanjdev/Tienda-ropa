@@ -22,7 +22,6 @@
 import Link from "next/link"
 import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { supabase } from "@/lib/supabase"
 
 /**
  * ResetPasswordForm
@@ -95,56 +94,11 @@ function ResetPasswordForm() {
    */
   const handleSubmit = async (event) => {
     event.preventDefault()
-    if (!email || !code) return setMessage("Escribe el correo y el código de recuperación.")
-    if (password.length < 6) return setMessage("La contraseña debe tener al menos 6 caracteres.")
-    if (password !== confirm) return setMessage("Las contraseñas no coinciden.")
-    setLoading(true)
-    // Verificar el OTP: type "recovery" indica que es un código de recuperación de contraseña
-    const { error: verifyError } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "recovery" })
-    if (verifyError) {
-      setLoading(false)
-      return setMessage("El código no es válido o expiró. Solicita uno nuevo.")
-    }
-    // Si el OTP es válido, actualizar la contraseña del usuario
-    const { error } = await supabase.auth.updateUser({ password })
-    setLoading(false)
-    setMessage(error ? error.message : "Contraseña actualizada. Ya puedes iniciar sesión.")
+    setMessage("La autenticación ahora es gestionada por nuestro propio servidor. Por favor contacta al administrador para restablecer tu contraseña.")
   }
 
-  /**
-   * handleResendCode
-   * ──────────────────────────────────────────────────────────────
-   * Reenvía el correo de recuperación de contraseña al usuario.
-   *
-   * Condiciones para ejecutarse:
-   * - No debe haber cooldown activo (cooldown === 0).
-   * - El campo de email debe estar lleno.
-   *
-   * Al reenviar exitosamente:
-   * - Muestra un mensaje de confirmación.
-   * - Inicia el cooldown de 60 segundos para prevenir spam.
-   *
-   * La URL de redirección (redirectTo) lleva de vuelta a /reset-password
-   * para que el usuario pueda ingresar el nuevo código en esta misma página.
-   */
   const handleResendCode = async () => {
-    if (cooldown > 0) return // no hacer nada si aún hay cooldown activo
-    if (!email.trim()) {
-      return setMessage("Escribe tu correo para poder reenviar el código.")
-    }
-    setResending(true)
-    setMessage("")
-    const redirectTo = `${window.location.origin}/reset-password`
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo,
-    })
-    setResending(false)
-    if (error) {
-      setMessage(`No se pudo reenviar: ${error.message}`)
-    } else {
-      setMessage("Código reenviado con éxito. Por favor revisa tu correo.")
-      setCooldown(60) // bloquear reenvíos por 60 segundos
-    }
+    setMessage("Por favor contacta al administrador o soporte de la tienda para asistencia con tu cuenta.")
   }
 
   return (

@@ -21,15 +21,9 @@ export default function AdminLogsPage() {
     let cancelled = false
     const load = async () => {
       setLoading(true)
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
       const res = await fetch("/api/admin/consulta/logs", {
         method: "POST",
         cache: "no-store",
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : {},
       })
       const body = await res.json()
       if (cancelled) return

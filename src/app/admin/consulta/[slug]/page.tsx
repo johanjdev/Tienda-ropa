@@ -38,15 +38,9 @@ export default function AdminConsultaPage() {
     if (!table) return
     setLoading(true)
     setError(null)
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
     const res = await fetch(`/api/admin/consulta/${slug}`, {
       method: "POST",
       cache: "no-store",
-      headers: session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : {},
     })
     const body = await res.json()
     if (cancelled?.()) return
@@ -79,15 +73,10 @@ export default function AdminConsultaPage() {
       return
     }
     setSavingRole(true)
-    setError(null)
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
     const res = await fetch("/api/admin/usuarios", {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       },
       body: JSON.stringify({ tipo_rol: newRole }),
     })
@@ -103,10 +92,9 @@ export default function AdminConsultaPage() {
 
   const roleRequest = async (method: "PATCH" | "DELETE", payload: Record<string, unknown>) => {
     setSavingRole(true)
-    const { data: { session } } = await supabase.auth.getSession()
     const res = await fetch("/api/admin/usuarios", {
       method,
-      headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     })
     const body = await res.json()

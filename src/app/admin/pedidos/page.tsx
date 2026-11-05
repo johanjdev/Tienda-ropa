@@ -45,14 +45,9 @@ export default function AdminPedidosPage() {
   const loadPedidos = async (cancelledRef?: { current: boolean }) => {
       setLoading(true)
       setError(null)
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
       const res = await fetch("/api/admin/pedidos", {
         method: "POST",
         cache: "no-store",
-        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       })
       const body = await res.json()
       if (cancelledRef?.current) return
@@ -83,16 +78,10 @@ export default function AdminPedidosPage() {
 
   const updatePedido = async (pedido: Pedido, cambios: Partial<Pick<Pedido, "estado" | "numero_guia" | "transportadora" | "novedad_detalle">>) => {
     setSavingId(pedido.id_pedido)
-    setError(null)
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
     const res = await fetch("/api/admin/pedidos", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       },
       body: JSON.stringify({
         id_pedido: pedido.id_pedido,

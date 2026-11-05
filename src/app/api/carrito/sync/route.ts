@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
+import { requireUser } from "@/lib/admin-auth"
 
 type CartItem = {
   id_producto: number
@@ -14,47 +13,19 @@ type Body = {
 }
 
 export async function POST(request: Request) {
-  const authHeader = request.headers.get("authorization") || ""
-  if (!authHeader.toLowerCase().startsWith("bearer ")) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 })
+  const auth = await requireUser(request)
+  if ("error" in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
   }
 
-  const { url, anonKey, configured } = getSupabasePublicEnv()
-  if (!configured) {
-    return NextResponse.json({ error: "Supabase no esta configurado." }, { status: 503 })
-  }
-
+  const { supabase, profile } = auth
   const body = (await request.json().catch(() => ({}))) as Body
   const items = Array.isArray(body.items) ? body.items : []
-
-  const supabase = createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-  })
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return NextResponse.json({ error: "Sesion no valida." }, { status: 401 })
-  }
-
-  const { data: usuario, error: usuarioError } = await supabase
-    .from("usuarios")
-    .select("id_usuario")
-    .eq("auth_id", user.id)
-    .maybeSingle()
-
-  if (usuarioError) return NextResponse.json({ error: usuarioError.message }, { status: 400 })
-  if (!usuario?.id_usuario) {
-    return NextResponse.json({ error: "No existe perfil de usuario." }, { status: 400 })
-  }
 
   const { data: existing, error: existingError } = await supabase
     .from("carrito")
     .select("id_carrito")
-    .eq("id_usuario", usuario.id_usuario)
+    .eq("id_usuario", profile.id_usuario)
     .maybeSingle()
 
   if (existingError) return NextResponse.json({ error: existingError.message }, { status: 400 })
@@ -63,7 +34,7 @@ export async function POST(request: Request) {
   if (!idCarrito) {
     const { data: created, error: createError } = await supabase
       .from("carrito")
-      .insert([{ id_usuario: usuario.id_usuario }])
+      .insert([{ id_usuario: profile.id_usuario }])
       .select("id_carrito")
       .single()
 
@@ -89,17 +60,14 @@ export async function POST(request: Request) {
     .filter((item) => item.id_producto > 0 && item.cantidad > 0)
 
   if (cleanItemsWithAttributes.length > 0) {
-    // Intentar insertar con talla y color
     const { error: insertError } = await supabase
       .from("carrito_productos")
       .insert(cleanItemsWithAttributes)
 
     if (insertError) {
-      // Si falla porque las columnas 'talla' o 'color' no existen (PGRST204),
-      // reintentar el insert básico sin esos campos
-      const isMissingColumns = 
-        insertError.code === "PGRST204" || 
-        insertError.message.includes("talla") || 
+      const isMissingColumns =
+        insertError.code === "PGRST204" ||
+        insertError.message.includes("talla") ||
         insertError.message.includes("color")
 
       if (isMissingColumns) {
@@ -120,4 +88,3 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true, id_carrito: idCarrito })
 }
-

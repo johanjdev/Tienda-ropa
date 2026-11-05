@@ -28,14 +28,9 @@ export default function AdminCarritosPage() {
     const load = async () => {
       setLoading(true)
       setError(null)
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
       const res = await fetch("/api/admin/carritos", {
         method: "POST",
         cache: "no-store",
-        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       })
       const body = await res.json()
       if (cancelled) return
