@@ -244,6 +244,7 @@ export default function LoginPage() {
 
           {/* Botón de submit: cambia de color y cursor según el estado de carga */}
           <button
+            type="submit"
             disabled={loading}
             className={`w-full rounded-xl py-3 font-medium transition ${
               loading

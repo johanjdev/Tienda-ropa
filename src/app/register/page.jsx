@@ -212,7 +212,7 @@ export default function Register() {
 
     // Validación básica y razonable.
     const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 
     if (!emailRegex.test(emailLimpio)) {
       return "Ingresa un correo electrónico válido."

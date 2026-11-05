@@ -70,8 +70,7 @@ export default function Catalogo() {
 
       setLoading(false)
     }
-
-    fetchProductos()
+    void fetchProductos()
   }, [])
 
   const filtered = useMemo(() => {

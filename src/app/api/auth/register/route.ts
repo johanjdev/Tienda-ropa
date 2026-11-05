@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "El nombre completo es obligatorio." }, { status: 400 })
     }
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
       return NextResponse.json({ error: "Ingresa un correo electrónico válido." }, { status: 400 })
     }
 

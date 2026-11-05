@@ -475,8 +475,10 @@ export default function ProductoPage() {
           role="dialog"
           aria-modal="true"
         >
-          <div
-            className="absolute inset-0 bg-black/85 backdrop-blur-md"
+          <button
+            type="button"
+            aria-label="Cerrar guía de tallas"
+            className="absolute inset-0 w-full h-full bg-black/85 backdrop-blur-md cursor-default border-0 p-0"
             onClick={() => setGuiaTallasOpen(false)}
           />
           <div className="relative z-[121] w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl bg-zinc-950 border border-white/15 p-4 sm:p-6 shadow-2xl shadow-black/80">

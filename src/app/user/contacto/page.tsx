@@ -33,7 +33,7 @@ export default function ContactoPage() {
           </div>
           <label className="mt-5 block text-sm text-zinc-300">Asunto<input name="asunto" required className="mt-2 w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-purple-500" /></label>
           <label className="mt-5 block text-sm text-zinc-300">Mensaje<textarea name="mensaje" required rows={5} className="mt-2 w-full resize-y rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-purple-500" /></label>
-          <button className="mt-7 rounded-full bg-[#6b2ad4] px-7 py-3 text-sm font-semibold hover:bg-[#7d3be5]">Enviar mensaje</button>
+          <button type="submit" className="mt-7 rounded-full bg-[#6b2ad4] px-7 py-3 text-sm font-semibold hover:bg-[#7d3be5]">Enviar mensaje</button>
         </form>
       </section>
     </main>

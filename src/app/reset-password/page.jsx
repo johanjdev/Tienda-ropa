@@ -170,6 +170,7 @@ function ResetPasswordForm() {
 
           {/* Botón de envío: deshabilitado mientras procesa */}
           <button
+            type="submit"
             disabled={loading}
             className="w-full rounded-xl bg-[#6b2ad4] py-3 font-semibold text-white disabled:opacity-60"
           >

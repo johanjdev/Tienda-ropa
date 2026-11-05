@@ -44,8 +44,10 @@ export default function FiltrosModal({
   return (
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+      <button
+        type="button"
+        aria-label="Cerrar filtros"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden w-full h-full cursor-default border-0 p-0"
         onClick={onClose}
       />
 
@@ -68,8 +70,9 @@ export default function FiltrosModal({
               {resultados} resultados
             </span>
             <button
-              onClick={onClose}
-              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all"
+            type="button"
+            onClick={onClose}
+            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all"
             >
               <i className="ri-close-line text-lg" />
             </button>
@@ -109,10 +112,11 @@ export default function FiltrosModal({
           </p>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => {
-                onCategoriaChange(null)
-              }}
-              className={`px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 border ${
+            type="button"
+            onClick={() => {
+              onCategoriaChange(null)
+            }}
+            className={`px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 border ${
                 idCategoriaFiltro === null
                   ? "bg-gradient-to-r from-purple-600 to-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/25 scale-105"
                   : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:border-white/20"
@@ -122,6 +126,7 @@ export default function FiltrosModal({
             </button>
             {categoriasDb.map((cat) => (
               <button
+                type="button"
                 key={cat.id_categoria}
                 onClick={() => {
                   onCategoriaChange(cat.id_categoria)
