@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
 import Modal from "@/components/Modal"
 
 export default function Register() {
@@ -561,125 +560,44 @@ export default function Register() {
       }
 
       // ========================================================
-      // CREAR USUARIO AUTH
+      // CREAR USUARIO EN NUESTRO BACKEND PROPIO
       // ========================================================
 
-      const { data, error: authError } =
-        await supabase.auth.signUp({
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: nombreFinal,
           email: emailFinal,
           password,
-          options: {
-            data: {
-              full_name: nombreFinal,
+          telefono: telefonoFinal || null,
+          direccion: direccionFinal || null,
+          id_tipo_documento: idTipoDocumento ? Number(idTipoDocumento) : null,
+          documento_numero: documentoFinal,
+        }),
+      })
 
-              id_tipo_documento:
-                idTipoDocumento
-                  ? Number(idTipoDocumento)
-                  : null,
+      const data = await res.json()
 
-              documento_numero:
-                documentoFinal,
-
-              telefono:
-                telefonoFinal || null,
-
-              direccion:
-                direccionFinal || null,
-            },
-          },
-        })
-
-      if (authError) throw authError
-
-      const user = data.user
-
-      if (!user) {
-        throw new Error(
-          "No se pudo crear el usuario. Revisa si ya existe."
-        )
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudo completar el registro.")
       }
 
       // ========================================================
-      // INSERTAR EN TABLA USUARIOS
+      // RESPUESTA EXITOSA
       // ========================================================
 
-      const { error: dbError } =
-        await supabase
-          .from("usuarios")
-          .upsert(
-            {
-              nombre: nombreFinal,
+      setInfoTitle("Registro exitoso")
+      setInfoMessage("Tu cuenta ha sido creada exitosamente. Serás redirigido.")
+      setInfoVariant("success")
+      setInfoOpen(true)
 
-              email: emailFinal,
+      const searchParams = new URLSearchParams(window.location.search)
+      const redirectUrl = searchParams.get("redirect") || "/"
 
-              // TEXT en Supabase
-              telefono:
-                telefonoFinal || null,
-
-              direccion:
-                direccionFinal || null,
-
-              auth_id: user.id,
-
-              id_rol: 1,
-
-              id_tipo_documento:
-                idTipoDocumento
-                  ? Number(idTipoDocumento)
-                  : null,
-
-              // TEXT en Supabase
-              documento_numero:
-                documentoFinal,
-            },
-            {
-              onConflict: "email",
-            }
-          )
-
-      if (dbError) throw dbError
-
-      // ========================================================
-      // RESPUESTA
-      // ========================================================
-
-      if (data.session) {
-        setInfoTitle("Registro exitoso")
-
-        setInfoMessage(
-          "Tu cuenta esta lista. Seras redirigido al inicio."
-        )
-
-        setInfoVariant("success")
-
-        setInfoOpen(true)
-
-        const searchParams =
-          new URLSearchParams(
-            window.location.search
-          )
-
-        const redirectUrl =
-          searchParams.get("redirect") || "/"
-
-        setTimeout(() => {
-          router.push(redirectUrl)
-        }, 1500)
-      } else {
-        setInfoTitle("Revisa tu correo")
-
-        setInfoMessage(
-          "Te enviamos un enlace de confirmacion. Cuando lo actives, podras iniciar sesion."
-        )
-
-        setInfoVariant("info")
-
-        setInfoOpen(true)
-
-        setTimeout(() => {
-          router.push("/login")
-        }, 2000)
-      }
+      setTimeout(() => {
+        window.location.href = redirectUrl
+      }, 1500)
     } catch (error) {
       console.error(error)
 

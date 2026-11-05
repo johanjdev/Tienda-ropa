@@ -1,70 +1,45 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
-import { getSupabasePublicEnv } from './lib/supabase-public-env'
+import { NextResponse, type NextRequest } from "next/server"
+import { verifyAuthToken, AUTH_COOKIE_NAME } from "./lib/jwt"
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value
+  const user = token ? await verifyAuthToken(token) : null
 
-  const { url, anonKey } = getSupabasePublicEnv()
+  const pathname = request.nextUrl.pathname
 
-  const supabase = createServerClient(
-    url,
-    anonKey,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    if (!user) return NextResponse.redirect(new URL('/login', request.url))
-
-    const { data: dbUser } = await supabase
-      .from('usuarios')
-      .select('id_rol')
-      .eq('auth_id', user.id)
-      .maybeSingle()
-
-    const { data: role } = dbUser
-      ? await supabase.from('roles').select('tipo_rol').eq('id_rol', Number(dbUser.id_rol)).maybeSingle()
-      : { data: null }
-
-    const roleName = String(role?.tipo_rol || '').trim().toLowerCase()
-    const isAdmin = Number(dbUser?.id_rol) === 2 || roleName === 'administrador' || roleName === 'admin'
-    const editorAllowed =
-      roleName === 'editor' &&
-      (request.nextUrl.pathname === '/admin' ||
-        request.nextUrl.pathname.startsWith('/admin/productos') ||
-        request.nextUrl.pathname.startsWith('/admin/pedidos'))
-
-    // El rol 3 (producción) puede consultar todo el panel, pero las rutas de
-    // escritura siguen protegidas por las APIs y la interfaz de solo lectura.
-    const produccionAllowed = Number(dbUser?.id_rol) === 3 || roleName === 'produccion' || roleName === 'producción'
-
-    if (!dbUser || (!isAdmin && !editorAllowed && !produccionAllowed)) {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-  }
-
-  if (request.nextUrl.pathname.startsWith('/cuenta')) {
+  // Proteger rutas de administración (/admin/...)
+  if (pathname.startsWith("/admin")) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
+
+    const roleName = String(user.rol || "").trim().toLowerCase()
+    const isAdmin = Number(user.id_rol) === 2 || roleName === "administrador" || roleName === "admin"
+    const editorAllowed =
+      roleName === "editor" &&
+      (pathname === "/admin" ||
+        pathname.startsWith("/admin/productos") ||
+        pathname.startsWith("/admin/pedidos"))
+
+    // El rol 3 (producción) puede consultar el panel en modo lectura
+    const produccionAllowed =
+      Number(user.id_rol) === 3 || roleName === "produccion" || roleName === "producción"
+
+    if (!isAdmin && !editorAllowed && !produccionAllowed) {
+      return NextResponse.redirect(new URL("/", request.url))
     }
   }
 
-  return supabaseResponse
+  // Proteger ruta de perfil de usuario (/cuenta/...)
+  if (pathname.startsWith("/cuenta")) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 }

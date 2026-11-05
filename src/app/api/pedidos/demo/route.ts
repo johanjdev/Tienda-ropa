@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
+import { requireUser } from "@/lib/admin-auth"
 
 type OrderItem = {
   id_producto: number
@@ -19,62 +18,17 @@ type Body = {
 }
 
 export async function POST(request: Request) {
-  const authHeader = request.headers.get("authorization") || ""
+  const auth = await requireUser(request)
+  if ("error" in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
+  }
+
+  const { supabase, profile: usuario } = auth
   const body = (await request.json().catch(() => ({}))) as Body
   const items = Array.isArray(body.items) ? body.items : []
 
-  if (!authHeader.toLowerCase().startsWith("bearer ")) {
-    return NextResponse.json({ error: "Inicia sesion para crear el pedido." }, { status: 401 })
-  }
-
   if (items.length === 0) {
     return NextResponse.json({ error: "El carrito esta vacio." }, { status: 400 })
-  }
-
-  const { url, anonKey, configured } = getSupabasePublicEnv()
-  if (!configured) {
-    return NextResponse.json({ error: "Supabase no esta configurado." }, { status: 503 })
-  }
-
-  const supabase = createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-  })
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return NextResponse.json({ error: "Sesion no valida." }, { status: 401 })
-  }
-
-  let { data: usuario, error: usuarioError } = await supabase
-    .from("usuarios")
-    .select("id_usuario, direccion")
-    .eq("auth_id", user.id)
-    .maybeSingle()
-
-  if (usuarioError) {
-    return NextResponse.json({ error: usuarioError.message }, { status: 400 })
-  }
-
-  if (!usuario && user.email) {
-    const { data: usuarioPorEmail, error: emailError } = await supabase
-      .from("usuarios")
-      .select("id_usuario, direccion")
-      .eq("email", user.email)
-      .maybeSingle()
-      
-    if (!emailError && usuarioPorEmail) {
-      usuario = usuarioPorEmail
-      // Sincronizar auth_id
-      await supabase.from("usuarios").update({ auth_id: user.id }).eq("id_usuario", usuarioPorEmail.id_usuario)
-    }
-  }
-
-  if (!usuario?.id_usuario) {
-    return NextResponse.json({ error: "No existe perfil de usuario para el pedido." }, { status: 400 })
   }
 
   const direccion = String(usuario.direccion || "").trim()
@@ -173,9 +127,9 @@ export async function POST(request: Request) {
 
   const { error: detalleError } = await supabase.from("detalle_pedidos").insert(detallesWithAttributes)
   if (detalleError) {
-    const isMissingColumns = 
-      detalleError.code === "PGRST204" || 
-      detalleError.message.includes("talla") || 
+    const isMissingColumns =
+      detalleError.code === "PGRST204" ||
+      detalleError.message.includes("talla") ||
       detalleError.message.includes("color")
 
     if (isMissingColumns) {
@@ -204,8 +158,7 @@ export async function POST(request: Request) {
     }
   }
 
-  // ── Descontar stock e inactivar productos agotados ──────────────
-  // Agrupar cantidades por producto para hacer actualizaciones eficientes
+  // Descontar stock
   const cantidadesPorProducto = new Map<number, number>()
   for (const item of items) {
     const id = Number(item.id_producto)
@@ -213,7 +166,6 @@ export async function POST(request: Request) {
   }
 
   for (const [idProducto, cantidadComprada] of cantidadesPorProducto) {
-    // Obtener el stock actual del producto
     const { data: productoData } = await supabase
       .from("productos")
       .select("stock, estado")
@@ -225,7 +177,6 @@ export async function POST(request: Request) {
       const nuevoStock = Math.max(0, stockActual - cantidadComprada)
       const updatePayload: Record<string, number | string> = { stock: nuevoStock }
 
-      // Si el stock llega a cero, inactivar automáticamente
       if (nuevoStock === 0) {
         updatePayload.estado = "inactivo"
       }
@@ -236,7 +187,6 @@ export async function POST(request: Request) {
         .eq("id_producto", idProducto)
     }
   }
-  // ── Fin descuento de stock ──────────────────────────────────────
 
   await supabase.from("logs").insert([
     {

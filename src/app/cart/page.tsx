@@ -81,17 +81,11 @@ export default function CartPage() {
   const syncCart = useCallback(
     async (nextItems: CartItem[]) => {
       if (!user) return
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      const token = session?.access_token
-      if (!token) return
 
       await fetch("/api/carrito/sync", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           items: nextItems.map((item) => ({
@@ -291,17 +285,10 @@ export default function CartPage() {
         await new Promise((resolve) => window.setTimeout(resolve, 600))
       }
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      const token = session?.access_token
-      if (!token) throw new Error("Sesion no valida.")
-
       const res = await fetch("/api/pedidos/demo", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           items: items.map((item) => ({

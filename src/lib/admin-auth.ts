@@ -1,5 +1,29 @@
-import { createClient } from "@supabase/supabase-js"
-import { getSupabasePublicEnv } from "./supabase-public-env"
+import { getAuthUser } from "./jwt"
+import { getDbClient } from "./db"
+
+export async function requireUser(request: Request) {
+  const authUser = await getAuthUser(request)
+  if (!authUser || !authUser.id_usuario) {
+    return { error: "No autorizado. Sesión no válida.", status: 401 as const }
+  }
+
+  const db = getDbClient()
+  const { data: profile, error: profileError } = await db
+    .from("usuarios")
+    .select("*")
+    .eq("id_usuario", authUser.id_usuario)
+    .maybeSingle()
+
+  if (profileError || !profile) {
+    return { error: "Usuario no encontrado.", status: 401 as const }
+  }
+
+  if (profile.activo === false) {
+    return { error: "Cuenta desactivada.", status: 403 as const }
+  }
+
+  return { supabase: db, db, user: authUser, profile }
+}
 
 export async function requireAdmin(request: Request) {
   return requireRole(request, ["administrador", "admin"])
@@ -15,45 +39,40 @@ export async function requireAdminPanelReader(request: Request) {
 }
 
 export async function requireRole(request: Request, allowedRoles: string[], allowedRoleIds: number[] = []) {
-  const authHeader = request.headers.get("authorization") || ""
-  const { url, anonKey, configured } = getSupabasePublicEnv()
-
-  if (!configured) return { error: "Supabase no esta configurado.", status: 503 as const }
-  if (!authHeader.toLowerCase().startsWith("bearer ")) {
-    return { error: "No autorizado.", status: 401 as const }
+  const authUser = await getAuthUser(request)
+  if (!authUser || !authUser.id_usuario) {
+    return { error: "No autorizado. Sesión no válida.", status: 401 as const }
   }
 
-  const supabase = createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-  })
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) return { error: "Sesion no valida.", status: 401 as const }
-
-  const { data: profile, error: profileError } = await supabase
+  const db = getDbClient()
+  const { data: profile, error: profileError } = await db
     .from("usuarios")
-    .select("id_usuario, id_rol")
-    .eq("auth_id", user.id)
+    .select("*")
+    .eq("id_usuario", authUser.id_usuario)
     .maybeSingle()
 
-  if (profileError) return { error: profileError.message, status: 400 as const }
-  const { data: role } = await supabase
+  if (profileError || !profile) {
+    return { error: "Usuario no encontrado.", status: 401 as const }
+  }
+
+  if (profile.activo === false) {
+    return { error: "Cuenta desactivada.", status: 403 as const }
+  }
+
+  const { data: role } = await db
     .from("roles")
     .select("tipo_rol")
-    .eq("id_rol", Number(profile?.id_rol))
+    .eq("id_rol", Number(profile.id_rol))
     .maybeSingle()
 
-  const roleName = String(role?.tipo_rol || "").trim().toLowerCase()
-  const isLegacyAdmin = Number(profile?.id_rol) === 2
+  const roleName = String(role?.tipo_rol || authUser.rol || "").trim().toLowerCase()
+  const isLegacyAdmin = Number(profile.id_rol) === 2
   const allowedByLegacyId =
     isLegacyAdmin && allowedRoles.some((allowed) => allowed === "admin" || allowed === "administrador")
 
-  if (!allowedRoles.includes(roleName) && !allowedRoleIds.includes(Number(profile?.id_rol)) && !allowedByLegacyId) {
+  if (!allowedRoles.includes(roleName) && !allowedRoleIds.includes(Number(profile.id_rol)) && !allowedByLegacyId) {
     return { error: "Permisos insuficientes.", status: 403 as const }
   }
 
-  return { supabase, user, profile, roleName }
+  return { supabase: db, db, user: authUser, profile, roleName }
 }

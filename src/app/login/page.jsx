@@ -20,7 +20,6 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
 import Modal from "@/components/Modal"
 
 /**
@@ -105,55 +104,38 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // Autenticar con Supabase Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Iniciar sesión llamando a nuestro backend propio
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       })
-      if (error) throw error
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudo iniciar sesión.")
+      }
 
       // Guardar o eliminar el correo de localStorage según la preferencia del usuario
       if (remember) localStorage.setItem("rememberEmail", email)
       else localStorage.removeItem("rememberEmail")
 
-      // Obtener el rol y estado activo del usuario desde la tabla `usuarios`
-      const { data: usuarioDb, error: roleError } = await supabase
-        .from("usuarios")
-        .select("id_rol, activo")
-        .eq("auth_id", data.user.id)
-        .maybeSingle()
-
-      if (roleError) throw roleError
-
-      // Validar si el usuario está inactivo
-      if (usuarioDb && usuarioDb.activo === false) {
-        await supabase.auth.signOut()
-        throw new Error("Esta cuenta ha sido desactivada. Por favor contacta al administrador.")
-      }
-
-      // Si tiene id_rol, obtener el nombre del rol desde la tabla `roles`
-      const { data: rolDb } = usuarioDb?.id_rol
-        ? await supabase
-            .from("roles")
-            .select("tipo_rol")
-            .eq("id_rol", Number(usuarioDb.id_rol))
-            .maybeSingle()
-        : { data: null }
-
-      // Determinar si el usuario es administrador por id_rol=2 o por nombre del rol
-      const roleName = String(rolDb?.tipo_rol || "").trim().toLowerCase()
       const isAdmin =
-        Number(usuarioDb?.id_rol) === 2 ||
-        roleName === "administrador" ||
-        roleName === "admin"
+        Number(data.user?.id_rol) === 2 ||
+        data.role === "administrador" ||
+        data.role === "admin" ||
+        data.role === "produccion" ||
+        data.role === "producción" ||
+        data.role === "editor"
 
       // Redirigir según el rol o parámetro redirect
       const searchParams = new URLSearchParams(window.location.search)
       const redirectUrl = searchParams.get("redirect")
       window.location.href = isAdmin ? "/admin" : (redirectUrl || "/")
     } catch (err) {
-      setModalTitle("Error al iniciar sesion")
-      setModalMessage(err.message || "No se pudo iniciar sesion.")
+      setModalTitle("Error al iniciar sesión")
+      setModalMessage(err.message || "No se pudo iniciar sesión.")
       setModalOpen(true)
     } finally {
       setLoading(false)
@@ -178,30 +160,12 @@ export default function LoginPage() {
    * hace clic en el enlace del correo en lugar de copiar el código.
    */
   const handlePasswordReset = async () => {
-    if (!email.trim()) {
-      setModalTitle("Correo requerido")
-      setModalMessage("Escribe tu correo para enviarte el código de recuperación.")
-      setModalOpen(true)
-      setRedirectToReset(false)
-      return
-    }
-
-    setResetLoading(true)
-    const redirectTo = `${window.location.origin}/reset-password`
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo,
-    })
-    setResetLoading(false)
-    if (error) {
-      setModalTitle("No se pudo enviar")
-      setModalMessage(error.message)
-      setRedirectToReset(false)
-    } else {
-      setModalTitle("Código enviado")
-      setModalMessage("Te hemos enviado un código de recuperación a tu correo. Al cerrar este mensaje, serás redirigido para ingresar el código y crear tu nueva contraseña.")
-      setRedirectToReset(true) // activar redirección al cerrar el modal
-    }
+    setModalTitle("Recuperación de contraseña")
+    setModalMessage(
+      "La autenticación ahora es gestionada por nuestro propio servidor. Si olvidaste tu contraseña o necesitas restablecerla, por favor contacta al administrador."
+    )
     setModalOpen(true)
+    setRedirectToReset(false)
   }
 
   return (

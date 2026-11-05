@@ -290,10 +290,8 @@ export default function AdminProductosPage() {
 
   const eliminarProducto = async (id: number) => {
     if (isEditor) return
-    const { data: { session } } = await supabase.auth.getSession()
     const response = await fetch(`/api/admin/productos/${id}`, {
       method: "DELETE",
-      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
     })
     const body = await response.json()
     if (!response.ok) {

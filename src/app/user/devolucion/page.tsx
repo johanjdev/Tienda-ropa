@@ -59,12 +59,8 @@ function DevolucionContent() {
       return
     }
     const fetchPedido = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) { router.push("/login"); return }
-
       const res = await fetch(`/api/pedidos/${id_pedido}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
         cache: "no-store",
       })
       if (!res.ok) { setErrorPage("No pudimos encontrar el pedido."); setLoading(false); return }
@@ -91,14 +87,10 @@ function DevolucionContent() {
       openModal("Motivo requerido", "Por favor describe el motivo de la devolución (mínimo 10 caracteres).", "error")
       return
     }
-    setSubmitting(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.access_token) { router.push("/login"); return }
-
     try {
       const res = await fetch("/api/devoluciones", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accion: "crear", id_pedido, id_producto, motivo: motivo.trim() }),
       })
       const body = await res.json().catch(() => ({}))

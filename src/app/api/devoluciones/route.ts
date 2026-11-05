@@ -1,66 +1,13 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-import { getSupabasePublicEnv } from "@/lib/supabase-public-env"
+import { requireUser } from "@/lib/admin-auth"
 
-/**
- * Helper: crea cliente Supabase autenticado con el token del request.
- * Retorna null si el header Authorization no está presente o el token no es válido.
- */
-async function getAuthenticatedClient(request: Request) {
-  const authorization = request.headers.get("authorization") || ""
-  if (!authorization.toLowerCase().startsWith("bearer "))
-    return { client: null, user: null, usuario: null, error: "No autorizado." }
-
-  const { url, anonKey, configured } = getSupabasePublicEnv()
-  if (!configured)
-    return { client: null, user: null, usuario: null, error: "Supabase no está configurado." }
-
-  const supabase = createClient(url, anonKey, {
-    global: { headers: { Authorization: authorization } },
-  })
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user)
-    return { client: null, user: null, usuario: null, error: "Sesión no válida." }
-
-  // Resolver id_usuario desde auth_id o email (igual que en /api/pedidos)
-  let { data: usuario } = await supabase
-    .from("usuarios")
-    .select("id_usuario")
-    .eq("auth_id", user.id)
-    .maybeSingle()
-
-  if (!usuario && user.email) {
-    const { data: porEmail } = await supabase
-      .from("usuarios")
-      .select("id_usuario")
-      .eq("email", user.email)
-      .maybeSingle()
-    if (porEmail) {
-      usuario = porEmail
-      await supabase
-        .from("usuarios")
-        .update({ auth_id: user.id })
-        .eq("id_usuario", porEmail.id_usuario)
-    }
+export async function POST(request: Request) {
+  const auth = await requireUser(request)
+  if ("error" in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
   }
 
-  if (!usuario?.id_usuario)
-    return { client: supabase, user, usuario: null, error: "Usuario no encontrado." }
-
-  return { client: supabase, user, usuario, error: null }
-}
-
-/**
- * POST /api/devoluciones
- * Uso 1: Listar devoluciones del usuario autenticado (sin body o body vacío).
- * Uso 2: Registrar solicitud de devolución (body con accion:"crear", id_pedido, id_producto, motivo).
- *
- * Usamos POST para todo el flujo tal como lo hace el resto de la aplicación.
- */
-export async function POST(request: Request) {
-  const { client: supabase, usuario, error } = await getAuthenticatedClient(request)
-  if (error || !supabase || !usuario)
-    return NextResponse.json({ error: error ?? "No autorizado." }, { status: 401 })
+  const { supabase, profile: usuario } = auth
 
   // Intentar leer el body para saber qué acción ejecutar
   let body: Record<string, unknown> = {}
