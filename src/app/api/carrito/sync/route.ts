@@ -22,6 +22,37 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as Body
   const items = Array.isArray(body.items) ? body.items : []
 
+  const cleanItems = items
+    .map((item) => ({
+      id_producto: Number(item.id_producto),
+      cantidad: Number(item.cantidad),
+      talla: item.talla || null,
+      color: item.color || null,
+    }))
+    .filter((item) => item.id_producto > 0 && item.cantidad > 0)
+
+  // 1. Invocar función atómica en PostgreSQL
+  const { data: rpcData, error: rpcError } = await supabase.rpc("fn_sincronizar_carrito", {
+    p_id_usuario: profile.id_usuario,
+    p_items: cleanItems,
+  })
+
+  if (!rpcError && rpcData) {
+    return NextResponse.json(rpcData)
+  }
+
+  const isFunctionMissing =
+    rpcError?.code === "PGRST202" ||
+    rpcError?.message?.includes("fn_sincronizar_carrito") ||
+    rpcError?.message?.includes("does not exist")
+
+  if (!isFunctionMissing && rpcError) {
+    return NextResponse.json({ error: rpcError.message }, { status: 400 })
+  }
+
+  // ----------------------------------------------------------------------------
+  // FALLBACK DE CONTINGENCIA (Si aún no se ha ejecutado el SQL en Supabase)
+  // ----------------------------------------------------------------------------
   const { data: existing, error: existingError } = await supabase
     .from("carrito")
     .select("id_carrito")
@@ -49,15 +80,13 @@ export async function POST(request: Request) {
 
   if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 400 })
 
-  const cleanItemsWithAttributes = items
-    .map((item) => ({
-      id_carrito: idCarrito,
-      id_producto: Number(item.id_producto),
-      cantidad: Number(item.cantidad),
-      talla: item.talla || null,
-      color: item.color || null,
-    }))
-    .filter((item) => item.id_producto > 0 && item.cantidad > 0)
+  const cleanItemsWithAttributes = cleanItems.map((item) => ({
+    id_carrito: idCarrito,
+    id_producto: item.id_producto,
+    cantidad: item.cantidad,
+    talla: item.talla,
+    color: item.color,
+  }))
 
   if (cleanItemsWithAttributes.length > 0) {
     const { error: insertError } = await supabase

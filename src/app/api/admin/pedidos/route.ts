@@ -141,31 +141,41 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-  // Acumula las cantidades totales por producto para calcular estadísticas
-  const totals = new Map<number, { id_producto: number; nombre: string; cantidad: number }>()
-  for (const pedido of data ?? []) {
-    for (const detalle of pedido.detalle_pedidos ?? []) {
-      const id = Number(detalle.id_producto)
-      const current = totals.get(id)
-      // Supabase puede devolver la relación como array o como objeto según la cardinalidad
-      const producto = Array.isArray(detalle.productos)
-        ? detalle.productos[0]
-        : detalle.productos
-      totals.set(id, {
-        id_producto: id,
-        nombre: producto?.nombre || `Producto ${id}`,
-        cantidad: (current?.cantidad ?? 0) + Number(detalle.cantidad || 0),
-      })
-    }
-  }
+  // Obtener estadísticas optimizadas directamente desde PostgreSQL (RPC)
+  let productoMasPedido = null
+  let productoMenosPedido = null
 
-  // Ordena de mayor a menor cantidad para determinar el más y el menos pedido
-  const productStats = [...totals.values()].sort((a, b) => b.cantidad - a.cantidad)
+  const { data: statsData, error: statsError } = await admin.supabase.rpc("fn_estadisticas_ventas")
+  if (!statsError && statsData) {
+    productoMasPedido = statsData.productoMasPedido || null
+    productoMenosPedido = statsData.productoMenosPedido || null
+  } else {
+    // Fallback: Acumula las cantidades totales por producto en memoria si aún no existe la función
+    const totals = new Map<number, { id_producto: number; nombre: string; cantidad: number }>()
+    for (const pedido of data ?? []) {
+      for (const detalle of pedido.detalle_pedidos ?? []) {
+        const id = Number(detalle.id_producto)
+        const current = totals.get(id)
+        const producto = Array.isArray(detalle.productos)
+          ? detalle.productos[0]
+          : detalle.productos
+        totals.set(id, {
+          id_producto: id,
+          nombre: producto?.nombre || `Producto ${id}`,
+          cantidad: (current?.cantidad ?? 0) + Number(detalle.cantidad || 0),
+        })
+      }
+    }
+
+    const productStats = [...totals.values()].sort((a, b) => b.cantidad - a.cantidad)
+    productoMasPedido = productStats[0] ?? null
+    productoMenosPedido = productStats.at(-1) ?? null
+  }
 
   return NextResponse.json({
     pedidos: data ?? [],
-    productoMasPedido: productStats[0] ?? null,
-    productoMenosPedido: productStats.at(-1) ?? null,
+    productoMasPedido,
+    productoMenosPedido,
   })
 }
 

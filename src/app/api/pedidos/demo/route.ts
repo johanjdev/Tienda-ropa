@@ -39,6 +39,42 @@ export async function POST(request: Request) {
     )
   }
 
+  const cleanItems = items.map((it) => ({
+    id_producto: Number(it.id_producto),
+    cantidad: Number(it.cantidad),
+    precio: Number(it.precio),
+    talla: it.talla || null,
+    color: it.color || null,
+  }))
+
+  // 1. Ejecutar Procedimiento Almacenado optimizado en PostgreSQL
+  const { data: rpcData, error: rpcError } = await supabase.rpc("fn_crear_pedido", {
+    p_id_usuario: usuario.id_usuario,
+    p_direccion_envio: direccion,
+    p_cupon_codigo: body.cupon_codigo ? String(body.cupon_codigo).trim() : null,
+    p_items: cleanItems,
+    p_ip_usuario: request.headers.get("x-forwarded-for") || "local",
+  })
+
+  // Si la función RPC se ejecutó exitosamente en la base de datos
+  if (!rpcError && rpcData) {
+    return NextResponse.json(rpcData)
+  }
+
+  // Si falló por una regla de negocio del procedimiento (ej: stock insuficiente, cupón vencido)
+  const isFunctionMissing =
+    rpcError?.code === "PGRST202" ||
+    rpcError?.message?.includes("fn_crear_pedido") ||
+    rpcError?.message?.includes("does not exist")
+
+  if (!isFunctionMissing && rpcError) {
+    return NextResponse.json({ error: rpcError.message }, { status: 400 })
+  }
+
+  // ----------------------------------------------------------------------------
+  // FALLBACK DE CONTINGENCIA:
+  // Se ejecuta únicamente si aún no se ha corrido el script SQL en Supabase
+  // ----------------------------------------------------------------------------
   const subtotalCalculado = items.reduce(
     (acc, item) => acc + Number(item.precio) * Number(item.cantidad),
     0
@@ -102,7 +138,6 @@ export async function POST(request: Request) {
     color: item.color || null,
   }))
 
-  // Validar que todos los productos existen en la base de datos
   const productIds = [...new Set(items.map((item) => Number(item.id_producto)))]
   const { data: productosExistentes, error: productosCheckError } = await supabase
     .from("productos")
@@ -117,7 +152,6 @@ export async function POST(request: Request) {
   const idsFaltantes = productIds.filter((id) => !idsExistentes.has(id))
 
   if (idsFaltantes.length > 0) {
-    // Eliminar el pedido creado ya que no se puede completar
     await supabase.from("pedidos").delete().eq("id_pedido", pedido.id_pedido)
     return NextResponse.json(
       { error: "Algunos productos del carrito ya no están disponibles. Por favor actualiza tu carrito." },
@@ -158,7 +192,6 @@ export async function POST(request: Request) {
     }
   }
 
-  // Descontar stock
   const cantidadesPorProducto = new Map<number, number>()
   for (const item of items) {
     const id = Number(item.id_producto)
